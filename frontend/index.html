@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart City Dashboard — Алматы</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
+
+<div class="dash">
+
+  <!-- ШАПКА -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🏙</div>
+      <div>
+        <h1>Smart City Dashboard</h1>
+        <p class="subtitle">Акимат города Алматы</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="update-time" id="updateTime">Загрузка...</span>
+      <button class="refresh-btn" onclick="loadData()">↻ Обновить</button>
+    </div>
+  </div>
+
+  <!-- ПОГОДА МИНИ-БЛОК -->
+  <div class="weather-bar" id="weatherBar">
+    <span id="wTemp">—</span>
+    <span id="wDesc">—</span>
+    <span>💧 <span id="wHumidity">—</span>%</span>
+    <span>🌬 <span id="wWind">—</span> м/с</span>
+    <span>👁 <span id="wVis">—</span> км</span>
+  </div>
+
+  <!-- ТАБЫ -->
+  <div class="tabs">
+    <div class="tab active" onclick="setSection('all', this)">Все</div>
+    <div class="tab" onclick="setSection('transport', this)">🚗 Транспорт</div>
+    <div class="tab" onclick="setSection('ecology', this)">🌫 Экология</div>
+    <div class="tab" onclick="setSection('safety', this)">🛡 Безопасность</div>
+    <div class="tab" onclick="setSection('zhkh', this)">🔧 ЖКХ</div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-skeleton"></div>
+    <div class="kpi-skeleton"></div>
+    <div class="kpi-skeleton"></div>
+    <div class="kpi-skeleton"></div>
+  </div>
+
+  <!-- ГРАФИКИ -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Динамика за 24 часа</span>
+        <div class="legend" id="lineLegend"></div>
+      </div>
+      <div style="position:relative;height:220px">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Уровни проблем</span>
+      </div>
+      <div style="position:relative;height:150px">
+        <canvas id="pieChart"></canvas>
+      </div>
+      <div class="pie-stats" id="pieStats"></div>
+    </div>
+  </div>
+
+  <!-- ПРОБЛЕМЫ -->
+  <div class="section-card">
+    <div class="section-title">⚠️ Проблемные ситуации</div>
+    <div id="problemsList"></div>
+  </div>
+
+  <!-- ЧАТ -->
+  <div class="section-card">
+    <div class="section-title">💬 Алем — AI Ассистент Акимата</div>
+    <div id="chatMessages" class="chat-messages">
+      <div class="chat-msg ai">Здравствуйте! Я Алем, AI-ассистент Акимата Алматы. Я вижу актуальные данные города и готов ответить на ваши вопросы.</div>
+    </div>
+    <div id="imagePreview" style="display:none;margin:8px 0;">
+      <img id="previewImg" style="max-height:100px;border-radius:8px;border:2px solid #4CAF50;">
+      <button onclick="removeImage()" class="remove-img-btn">✕</button>
+    </div>
+    <div class="chat-input-row">
+      <label class="upload-btn" title="Прикрепить фото">
+        📎<input type="file" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
+      </label>
+      <input type="text" id="chatInput" class="chat-input"
+        placeholder="Задайте вопрос про Алматы..."
+        onkeydown="if(event.key==='Enter') sendChat()">
+      <button class="send-btn" onclick="sendChat()">Отправить</button>
+    </div>
+    <p class="chat-hint">Можно вставить фото через Ctrl+V</p>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

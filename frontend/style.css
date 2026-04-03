@@ -1,0 +1,98 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { font-family: Arial, sans-serif; background: #f0f2f5; color: #1a1a1a; }
+
+.dash { max-width: 960px; margin: 0 auto; padding: 20px 16px; }
+
+/* ШАПКА */
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo { font-size: 32px; line-height: 1; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.subtitle { font-size: 12px; color: #888; margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.update-time { font-size: 12px; color: #888; }
+.refresh-btn { padding: 6px 14px; font-size: 13px; border: 1px solid #ccc; border-radius: 8px; background: white; cursor: pointer; }
+.refresh-btn:hover { background: #f5f5f5; }
+
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+.status-dot.live { background: #4CAF50; animation: pulse 2s infinite; }
+.status-dot.error { background: #e74c3c; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ПОГОДА */
+.weather-bar {
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+    background: white; border-radius: 10px; padding: 10px 16px;
+    margin-bottom: 14px; font-size: 13px; color: #555;
+    border-left: 4px solid #3498db;
+}
+.weather-bar span { display: flex; align-items: center; gap: 4px; }
+#wTemp { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+#wDesc { color: #777; font-style: italic; }
+
+/* ТАБЫ */
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab { padding: 6px 16px; font-size: 13px; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; background: white; color: #555; transition: 0.15s; user-select: none; }
+.tab:hover { border-color: #4CAF50; color: #4CAF50; }
+.tab.active { background: #4CAF50; color: white; border-color: #4CAF50; }
+
+/* KPI */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+@media (max-width: 600px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.kpi { background: white; border-radius: 10px; padding: 14px; border-left: 4px solid #ccc; }
+.kpi.high { border-left-color: #e74c3c; }
+.kpi.medium { border-left-color: #f39c12; }
+.kpi.low { border-left-color: #4CAF50; }
+.kpi-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.kpi-value { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.kpi-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.badge-high { background: #fdeaea; color: #c0392b; }
+.badge-medium { background: #fef5e4; color: #b7770d; }
+.badge-low { background: #eafaf1; color: #1e8449; }
+.kpi-source { font-size: 10px; color: #bbb; margin-top: 4px; }
+
+.kpi-skeleton { background: #e8e8e8; border-radius: 10px; height: 90px; animation: shimmer 1.2s infinite; }
+@keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* ГРАФИКИ */
+.charts-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 12px; margin-bottom: 14px; }
+@media (max-width: 640px) { .charts-grid { grid-template-columns: 1fr; } }
+.chart-card { background: white; border-radius: 10px; padding: 14px; }
+.chart-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.chart-title { font-size: 13px; font-weight: 600; color: #333; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: 11px; color: #666; }
+.legend span { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+.pie-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; text-align: center; }
+.pie-stat { padding: 6px; border-radius: 6px; }
+.pie-stat .ps-val { font-size: 18px; font-weight: 600; }
+.pie-stat .ps-label { font-size: 10px; color: #888; }
+
+/* ПРОБЛЕМЫ */
+.section-card { background: white; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.section-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; }
+.problem-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f5f5f5; }
+.problem-row:last-child { border-bottom: none; }
+.prob-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.prob-dot.high { background: #e74c3c; }
+.prob-dot.medium { background: #f39c12; }
+.prob-dot.low { background: #4CAF50; }
+.prob-name { flex: 1; font-size: 13px; color: #222; }
+.prob-sector { font-size: 11px; color: #aaa; min-width: 80px; text-align: right; }
+
+/* ЧАТ */
+.chat-messages { min-height: 140px; max-height: 340px; overflow-y: auto; border: 1px solid #eee; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #fafafa; display: flex; flex-direction: column; gap: 8px; }
+.chat-msg { padding: 10px 14px; border-radius: 10px; max-width: 82%; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.chat-msg.user { background: #4CAF50; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+.chat-msg.ai { background: #e8f0fe; color: #222; align-self: flex-start; border-bottom-left-radius: 2px; }
+.chat-input-row { display: flex; gap: 8px; align-items: center; }
+.chat-input { flex: 1; padding: 10px 14px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; outline: none; }
+.chat-input:focus { border-color: #4CAF50; }
+.send-btn { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.send-btn:hover { background: #43a047; }
+.upload-btn { font-size: 20px; cursor: pointer; padding: 4px 8px; user-select: none; }
+.chat-hint { font-size: 11px; color: #bbb; margin-top: 6px; }
+.remove-img-btn { margin-left: 8px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 3px 8px; font-size: 12px; }
