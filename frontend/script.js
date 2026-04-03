@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // ===== ДАННЫЕ =====
 const districts = {
     "Центр": { traffic: 85, pollution: 70 },
@@ -20,7 +19,6 @@ function getSelectedData() {
 
 // ===== ВКЛАДКИ =====
 function switchTab(tabName) {
-
     document.querySelectorAll(".tab").forEach(btn => btn.classList.remove("active"));
     document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
 
@@ -28,26 +26,6 @@ function switchTab(tabName) {
 
     if (tabName === "transport") {
         document.querySelectorAll(".tab")[0].classList.add("active");
-=======
-// СУЩЕСТВУЮЩАЯ ФУНКЦИЯ (не меняй)
-async function analyze() {
-    const res = await fetch("http://localhost:8000/backend/api/analyze.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ traffic: 80, pollution: 70 })
-    });
-    const data = await res.json();
-    const summary = `📊 В городе наблюдается ${data.problem.toLowerCase()}. Это ${data.level === "high" ? "критическая ситуация" : "контролируемая ситуация"}.`;
-    document.getElementById("summary").innerText = summary;
-    document.getElementById("problem").innerText = "Проблема: " + data.problem;
-    document.getElementById("level").innerText = "Уровень: " + data.level;
-    document.getElementById("recommendation").innerText = "Рекомендация: " + data.recommendation;
-    document.getElementById("result").classList.remove("hidden");
-    if (data.level === "high") {
-        document.getElementById("result").style.border = "3px solid red";
-    } else if (data.level === "medium") {
-        document.getElementById("result").style.border = "3px solid orange";
->>>>>>> 4fac8e7b1f0f920f4dd064ae0ec18a6a4b2a8f99
     } else {
         document.querySelectorAll(".tab")[1].classList.add("active");
     }
@@ -55,7 +33,6 @@ async function analyze() {
 
 // ===== ОБНОВЛЕНИЕ КАРТЫ =====
 function updateMapZones(pollution) {
-
     const zones = [
         document.getElementById("zone-center"),
         document.getElementById("zone-auezov"),
@@ -79,6 +56,7 @@ function updateMapZones(pollution) {
     });
 }
 
+// ===== ЧАТ (старый) =====
 function toggleChat() {
     document.getElementById("chat").classList.toggle("hidden");
 }
@@ -91,25 +69,18 @@ async function sendMessage() {
 
     const messages = document.getElementById("chat-messages");
 
-    // сообщение пользователя
     messages.innerHTML += `<div><b>Ты:</b> ${message}</div>`;
-
     input.value = "";
 
     try {
         const res = await fetch("http://localhost:8000/api/analyze.php", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ question: message })
         });
 
         const data = await res.json();
-
-        // ответ ИИ
         messages.innerHTML += `<div><b>AI:</b> ${data.answer}</div>`;
-
         messages.scrollTop = messages.scrollHeight;
 
     } catch (err) {
@@ -118,16 +89,14 @@ async function sendMessage() {
     }
 }
 
-// ===== АНАЛИЗ =====
+// ===== АНАЛИЗ (основной) =====
 async function analyze() {
     try {
         const inputData = getSelectedData();
 
-        const res = await fetch("http://localhost:8000/api/analyze.php", {
+        const res = await fetch("http://localhost:8000/backend/api/analyze.php", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(inputData)
         });
 
@@ -153,7 +122,6 @@ async function analyze() {
         document.getElementById("eco-level").innerText = "Уровень: " + ecoLevel;
         document.getElementById("eco-indicator").style.background = ecoColor;
 
-        // карта
         updateMapZones(pollution);
 
         // ===== ТРАНСПОРТ =====
@@ -165,8 +133,11 @@ async function analyze() {
             low: "🟢 Низкий"
         };
 
-        document.getElementById("level").innerText = "Уровень: " + (levelMap[data.level] || data.level);
-        document.getElementById("recommendation").innerText = "📌 Рекомендация: " + data.recommendation;
+        document.getElementById("level").innerText =
+            "Уровень: " + (levelMap[data.level] || data.level);
+
+        document.getElementById("recommendation").innerText =
+            "📌 Рекомендация: " + data.recommendation;
 
         // ===== SUMMARY =====
         const summary = `📊 В районе "${document.getElementById("district").value}" наблюдается ${data.problem.toLowerCase()}.
@@ -174,7 +145,7 @@ async function analyze() {
 
         document.getElementById("summary").innerText = summary;
 
-        // ===== ЦВЕТ РАМКИ =====
+        // ===== РАМКА =====
         const resultBlock = document.getElementById("result");
 
         if (data.level === "high") {
@@ -193,7 +164,7 @@ async function analyze() {
     }
 }
 
-// НОВАЯ ФУНКЦИЯ — ЧАТ
+// ===== НОВЫЙ ЧАТ =====
 const SESSION_ID = "user_" + Math.random().toString(36).substr(2, 9);
 let currentImage = null;
 
@@ -239,6 +210,7 @@ function addChatMessage(text, type, id) {
 function handleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = (e) => {
         currentImage = e.target.result.split(',')[1];
