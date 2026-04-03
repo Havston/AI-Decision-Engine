@@ -1,6 +1,6 @@
 <?php
 // OpenAI (оставьте свой ключ)
-define('OPENAI_API_KEY', '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');
+define('OPENAI_API_KEY', 'sk-your-openai-key-here');
 define('OPENAI_MODEL', 'gpt-4o');
 
 // Ключ API 2ГИС (пока можете оставить заглушку или вписать реальный, если есть)
