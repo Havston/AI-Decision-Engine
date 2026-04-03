@@ -8,8 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once __DIR__ . '/backend/services/AIService.php';
-require_once __DIR__ . '/backend/services/Analyzer.php';
+require_once __DIR__ . '/services/AIService.php';
+require_once __DIR__ . '/services/Analyzer.php';
 
 $analyzer = new Analyzer();
 $uri = $_SERVER['REQUEST_URI'];
@@ -17,7 +17,10 @@ $body = json_decode(file_get_contents('php://input'), true);
 
 // Роутинг
 if (strpos($uri, '/analyze') !== false) {
-    echo json_encode($analyzer->analyze($body));
+    $question = $body['question'] ?? '';
+    $image    = $body['image']    ?? null;
+    $context  = $body['context']  ?? null;
+    echo json_encode(['answer' => $analyzer->chat($question, $image, $context)]);
 
 } elseif (strpos($uri, '/ask') !== false) {
     $question = $body['question'] ?? '';

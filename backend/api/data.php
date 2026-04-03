@@ -4,19 +4,25 @@ header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Content-Type: application/json; charset=utf-8");
 
-// ЗАЩИТА ОТ ЛЮБОГО МУСОРА В JSON
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
+
 error_reporting(0);
 ini_set('display_errors', 0);
-ob_start(); // очищаем любой случайный вывод
+ob_start();
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit(0);
+require_once dirname(__DIR__) . '/services/DataService.php';
 
-require_once __DIR__ . '/../services/DataService.php';
+try {
+    $ds   = new DataService();
+    $data = $ds->getAll();
+} catch (Throwable $e) {
+    error_log("[data.php] " . $e->getMessage());
+    ob_end_clean();
+    http_response_code(500);
+    echo json_encode(["error" => "Ошибка загрузки данных"], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
-$ds = new DataService();
-$data = $ds->getAll();
-
-// Финальная очистка и вывод ТОЛЬКО JSON
 ob_end_clean();
 echo json_encode($data, JSON_UNESCAPED_UNICODE);
 exit;

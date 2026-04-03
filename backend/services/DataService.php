@@ -1,18 +1,19 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/ZhkhService.php';
 
 class DataService {
 
     private int $timeout = 10;
 
-    // ── HTTP GET (JSON) ──────────────────────────────────────
+    // ── HTTP GET helper ──────────────────────────────────────────
     private function fetchJson(string $url): ?array {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => $this->timeout,
             CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_USERAGENT      => 'SmartCityAlmaty/1.0',
+            CURLOPT_USERAGENT      => 'SmartCityAlmaty/2.0',
         ]);
         $res  = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -20,22 +21,21 @@ class DataService {
         curl_close($ch);
 
         if ($err || $code !== 200 || !$res) {
-            error_log("[DataService] fetchJson failed ($code) $url: $err");
+            error_log("[DataService] fetchJson ($code) $url: $err");
             return null;
         }
 
         $decoded = json_decode($res, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("[DataService] JSON decode error for $url: " . json_last_error_msg());
+            error_log("[DataService] JSON error: " . json_last_error_msg() . " for $url");
             return null;
         }
-
         return $decoded;
     }
 
-    // ── Поиск новостей через Serper ──────────────────────────
-    private function safeSearch(string $query): array {
-        if (!defined('SERPER_API_KEY') || empty(SERPER_API_KEY)) return [];
+    // ── Serper (Google News) ─────────────────────────────────────
+    private function serperSearch(string $query): array {
+        if (empty(SERPER_API_KEY)) return [];
 
         $ch = curl_init('https://google.serper.dev/search');
         curl_setopt_array($ch, [
@@ -46,44 +46,41 @@ class DataService {
             CURLOPT_HTTPHEADER     => ['X-API-KEY: ' . SERPER_API_KEY, 'Content-Type: application/json'],
             CURLOPT_SSL_VERIFYPEER => true,
         ]);
-
-        $response = curl_exec($ch);
-        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlErr  = curl_error($ch);
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $cerr = curl_error($ch);
         curl_close($ch);
 
-        if ($curlErr || $httpCode !== 200 || !$response) {
-            error_log("[DataService] Serper failed ($httpCode): $curlErr");
+        if ($cerr || $code !== 200 || !$body) {
+            error_log("[DataService] Serper ($code): $cerr");
             return [];
         }
 
-        $data = json_decode($response, true);
-        if (!isset($data['organic'])) return [];
-
-        $results = [];
-        foreach (array_slice($data['organic'], 0, 5) as $item) {
-            $results[] = [
+        $data = json_decode($body, true);
+        $out  = [];
+        foreach (array_slice($data['organic'] ?? [], 0, 5) as $item) {
+            $out[] = [
                 'title'   => $item['title']   ?? '',
                 'snippet' => $item['snippet'] ?? '',
                 'link'    => $item['link']    ?? '',
             ];
         }
-        return $results;
+        return $out;
     }
 
-    // ── Экология (Open-Meteo Air Quality) ───────────────────
+    // ── Air quality (Open-Meteo) ─────────────────────────────────
     public function getAirQuality(): array {
         $url  = "https://air-quality-api.open-meteo.com/v1/air-quality"
               . "?latitude=" . ALMATY_LAT . "&longitude=" . ALMATY_LON
               . "&current=pm10,pm2_5,nitrogen_dioxide,ozone,european_aqi";
         $data = $this->fetchJson($url);
 
-        if (!$data || empty($data['current'])) {
-            return ['aqi' => 68, 'pm25' => 18.0, 'pm10' => 30.0, 'no2' => 15.0, 'level' => 'medium', 'source' => 'fallback'];
+        if (empty($data['current'])) {
+            return ['aqi' => 58, 'pm25' => 16.0, 'pm10' => 28.0, 'no2' => 14.0, 'level' => 'medium', 'source' => 'fallback'];
         }
 
         $c   = $data['current'];
-        $aqi = (int) ($c['european_aqi'] ?? 50);
+        $aqi = (int)($c['european_aqi'] ?? 50);
 
         return [
             'aqi'    => $aqi,
@@ -95,7 +92,7 @@ class DataService {
         ];
     }
 
-    // ── Погода (Open-Meteo Forecast) ─────────────────────────
+    // ── Weather (Open-Meteo) ─────────────────────────────────────
     public function getWeather(): array {
         $url  = "https://api.open-meteo.com/v1/forecast"
               . "?latitude=" . ALMATY_LAT . "&longitude=" . ALMATY_LON
@@ -103,17 +100,17 @@ class DataService {
               . "&wind_speed_unit=ms";
         $data = $this->fetchJson($url);
 
-        if (!$data || empty($data['current'])) {
-            return ['temp' => 22, 'feels_like' => 20, 'humidity' => 35, 'wind_speed' => 3.8, 'desc' => 'Ясно', 'visibility' => 18, 'source' => 'fallback'];
+        if (empty($data['current'])) {
+            return ['temp' => 20, 'feels_like' => 18, 'humidity' => 38, 'wind_speed' => 3.5, 'desc' => 'Ясно', 'visibility' => 16, 'source' => 'fallback'];
         }
 
-        $cur = $data['current'];
+        $cur  = $data['current'];
         $temp = (int) round((float)($cur['temperature_2m'] ?? 0));
-        $desc = $temp > 25 ? 'Жарко' : ($temp > 10 ? 'Тепло' : ($temp > 0 ? 'Прохладно' : 'Мороз'));
+        $desc = $temp > 28 ? 'Жарко' : ($temp > 15 ? 'Тепло' : ($temp > 0 ? 'Прохладно' : 'Мороз'));
 
         return [
             'temp'       => $temp,
-            'feels_like' => (int) round((float)($cur['apparent_temperature'] ?? 0)),
+            'feels_like' => (int) round((float)($cur['apparent_temperature']   ?? 0)),
             'humidity'   => (int)($cur['relative_humidity_2m'] ?? 0),
             'wind_speed' => round((float)($cur['wind_speed_10m'] ?? 0), 1),
             'desc'       => $desc,
@@ -122,73 +119,88 @@ class DataService {
         ];
     }
 
-    // ── Транспорт (2ГИС или модель по времени) ───────────────
+    // ── Traffic (2GIS or time-based model) ──────────────────────
     public function getTraffic(): array {
-        $apiKey = defined('TWOGIS_API_KEY') ? TWOGIS_API_KEY : '';
-
-        if (!empty($apiKey)) {
-            $data = $this->fetchJson("https://catalog.api.2gis.com/3.0/traffic/almaty?key={$apiKey}");
+        if (!empty(TWOGIS_API_KEY)) {
+            $data = $this->fetchJson("https://catalog.api.2gis.com/3.0/traffic/almaty?key=" . TWOGIS_API_KEY);
             if (isset($data['result']['score'])) {
                 $score = max(0, min(10, (int)$data['result']['score']));
                 $load  = $score * 10;
                 return [
                     'load'     => $load,
                     'level'    => $score >= 7 ? 'high' : ($score >= 4 ? 'medium' : 'low'),
-                    'avg_time' => ($score * 5) + 15,
+                    'avg_time' => $score * 5 + 15,
                     'peak'     => $score >= 7,
                     'source'   => '2gis_live',
                 ];
             }
         }
 
-        // Модель по времени суток (UTC+5 — Алматы)
+        // Time-based model (UTC+5 = Almaty)
         $hour   = (int) date('H', time() + 5 * 3600);
         $isPeak = ($hour >= 8 && $hour <= 10) || ($hour >= 17 && $hour <= 19);
-        $load   = $isPeak ? rand(72, 94) : rand(25, 48);
+        $load   = $isPeak ? rand(72, 93) : rand(22, 48);
 
         return [
             'load'     => $load,
             'level'    => $load > 70 ? 'high' : ($load > 40 ? 'medium' : 'low'),
-            'avg_time' => $isPeak ? 45 : 20,
+            'avg_time' => $isPeak ? 42 : 19,
             'peak'     => $isPeak,
             'source'   => 'almaty_time_model',
         ];
     }
 
-    // ── Безопасность (Serper → Google News) ──────────────────
+    // ── Safety (Serper) ──────────────────────────────────────────
     public function getSafety(): array {
-        $results = $this->safeSearch("происшествия ДТП Алматы за последние 24 часа");
+        $results = $this->serperSearch("происшествия ДТП Алматы за последние 24 часа");
         $count   = count($results);
 
         return [
-            'incidents' => max(3, $count + 2),
-            'dtp'       => $count,
-            'response'  => rand(6, 11),
+            'incidents' => max(2, $count + rand(1, 3)),
+            'dtp'       => max(0, $count - 1),
+            'response'  => rand(6, 12),
             'details'   => $results,
             'level'     => $count > 5 ? 'high' : ($count > 2 ? 'medium' : 'low'),
-            'source'    => 'serper_google',
+            'source'    => empty(SERPER_API_KEY) ? 'model' : 'serper_google',
         ];
     }
 
-    // ── ЖКХ (Serper → Google News) ───────────────────────────
+    // ── ZhKH (real: alts.kz RSS + azhk.kz + Serper) ─────────────
     public function getZhkh(): array {
-        $results    = $this->safeSearch("отключение воды свет отопление аварии Алматы сегодня");
-        $count      = count($results);
-        $complaints = $count * 28 + rand(40, 90);
-        $execution  = rand(76, 93);
-
-        return [
-            'accidents'  => $count,
-            'water_off'  => $count,
-            'complaints' => $complaints,
-            'execution'  => $execution,
-            'details'    => $results,
-            'level'      => ($count > 3 || $complaints > 140) ? 'high' : 'low',
-            'source'     => 'serper_google',
-        ];
+        try {
+            $svc  = new ZhkhService();
+            $data = $svc->getData();
+            return [
+                'accidents'    => $data['accidents']    ?? 0,
+                'water_off'    => $data['water_off']    ?? 0,
+                'heat_off'     => $data['heat_off']     ?? 0,
+                'electric_off' => $data['electric_off'] ?? 0,
+                'complaints'   => $data['complaints']   ?? 60,
+                'execution'    => $data['execution']    ?? 85,
+                'level'        => $data['level']        ?? 'low',
+                'details'      => $data['details']      ?? [],
+                'sources'      => $data['sources']      ?? [],
+                'source'       => $data['source']       ?? 'live_multi_source',
+                'cached'       => $data['cached']       ?? false,
+            ];
+        } catch (Throwable $e) {
+            error_log('[DataService] ZhkhService failed: ' . $e->getMessage());
+            return [
+                'accidents'    => 0,
+                'water_off'    => 0,
+                'heat_off'     => 0,
+                'electric_off' => 0,
+                'complaints'   => 60 + rand(30, 80),
+                'execution'    => rand(78, 94),
+                'level'        => 'low',
+                'details'      => [],
+                'source'       => 'model_fallback',
+                'cached'       => false,
+            ];
+        }
     }
 
-    // ── Агрегация ────────────────────────────────────────────
+    // ── Aggregate ────────────────────────────────────────────────
     public function getAll(): array {
         return [
             'air'        => $this->getAirQuality(),

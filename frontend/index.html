@@ -1,144 +1,1529 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart City Dashboard — Алматы</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Smart City • Алматы</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#050510;--surf:rgba(13,13,34,0.72);--surf2:rgba(20,20,46,0.65);--surf3:rgba(28,28,60,0.8);
+  --border:rgba(120,110,255,.12);--border2:rgba(120,110,255,.3);
+  --acc:#7c6fff;--acc2:#00e5ff;
+  --glow:rgba(124,111,255,.35);--glow2:rgba(0,229,255,.2);
+  --high:#ff4f4f;--mid:#ffb300;--low:#00e676;
+  --txt:#e0e0ff;--txt2:#8888bb;--txt3:#5555aa;
+  --r:18px;--r2:12px;--shadow:0 8px 40px rgba(0,0,0,.7);
+  --t:.28s cubic-bezier(.4,0,.2,1);
+  --glass:blur(20px) saturate(180%);
+  --glass-bg:rgba(13,13,34,0.6);
+}
+[data-theme="light"]{
+  --bg:#ecedf8;--surf:rgba(255,255,255,0.7);--surf2:rgba(248,248,255,0.75);--surf3:rgba(240,240,255,0.85);
+  --border:rgba(100,90,255,.1);--border2:rgba(100,90,255,.25);
+  --txt:#0a0a20;--txt2:#5555aa;--txt3:#9090cc;
+  --shadow:0 4px 24px rgba(0,0,0,.1);
+  --glass-bg:rgba(255,255,255,0.6);
+  --glow:rgba(124,111,255,.2);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Onest',sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased;font-size:14px;transition:background .4s}
+
+/* Animated BG */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%,rgba(124,111,255,.12) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 80%,rgba(0,229,255,.08) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 50% at 50% 50%,rgba(0,0,0,.3) 0%,transparent 100%);
+  animation:bgPulse 12s ease-in-out infinite alternate;
+}
+@keyframes bgPulse{
+  0%{opacity:.7}
+  50%{opacity:1}
+  100%{opacity:.7}
+}
+[data-theme="light"] body::before{
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%,rgba(124,111,255,.08) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 80%,rgba(0,229,255,.06) 0%,transparent 60%);
+}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── LIQUID GLASS MIXIN ── */
+.glass{
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass);
+  -webkit-backdrop-filter:var(--glass);
+  border:1px solid var(--border);
+}
+.glass-strong{
+  background:rgba(13,13,40,0.75);
+  backdrop-filter:blur(28px) saturate(200%);
+  -webkit-backdrop-filter:blur(28px) saturate(200%);
+  border:1px solid var(--border2);
+}
+[data-theme="light"] .glass{background:rgba(255,255,255,0.65)}
+[data-theme="light"] .glass-strong{background:rgba(255,255,255,0.82)}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100dvh;position:relative;z-index:1}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:248px;min-width:248px;
+  background:var(--glass-bg);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:30;
+  transition:transform var(--t);
+  box-shadow:4px 0 32px rgba(0,0,0,.4);
+}
+.logo{padding:18px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.logo-icon{
+  width:40px;height:40px;border-radius:13px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+  box-shadow:0 4px 20px var(--glow),inset 0 1px 0 rgba(255,255,255,.2);
+}
+.logo-title{font-size:16px;font-weight:800;letter-spacing:-.5px}
+.logo-sub{font-size:10px;color:var(--acc2);font-weight:600;margin-top:1px;letter-spacing:.5px}
+
+.nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 13px;border-radius:var(--r2);
+  cursor:pointer;transition:var(--t);
+  font-size:13px;font-weight:500;color:var(--txt2);
+  border:1px solid transparent;text-decoration:none;
+  position:relative;overflow:hidden;
+}
+.nav-item::before{
+  content:'';position:absolute;inset:0;opacity:0;
+  background:linear-gradient(90deg,rgba(124,111,255,.1),rgba(0,229,255,.05));
+  transition:opacity var(--t);border-radius:var(--r2);
+}
+.nav-item:hover{color:var(--txt);border-color:var(--border);transform:translateX(3px)}
+.nav-item:hover::before{opacity:1}
+.nav-item.active{color:var(--txt);border-color:var(--border2)}
+.nav-item.active::before{opacity:1}
+.nav-item.active::after{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:3px;background:linear-gradient(var(--acc),var(--acc2));border-radius:0 3px 3px 0;
+  box-shadow:0 0 10px var(--acc);
+}
+.nav-icon{font-size:15px;flex-shrink:0}
+
+.sidebar-foot{padding:12px 8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.btn-ai{
+  width:100%;padding:11px;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  border-radius:var(--r2);font-size:13px;font-weight:700;color:#fff;
+  cursor:pointer;border:none;
+  box-shadow:0 4px 20px var(--glow),inset 0 1px 0 rgba(255,255,255,.15);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:var(--t);position:relative;overflow:hidden;
+}
+.btn-ai::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.15),transparent);
+  opacity:0;transition:opacity var(--t);
+}
+.btn-ai:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--glow)}
+.btn-ai:hover::after{opacity:1}
+.btn-ai:active{transform:translateY(0)}
+
+.btn-theme{
+  width:100%;padding:8px;
+  background:var(--surf2);border:1px solid var(--border);
+  border-radius:var(--r2);font-size:12px;font-weight:500;color:var(--txt2);
+  cursor:pointer;transition:var(--t);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-theme:hover{color:var(--txt);border-color:var(--border2)}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+.topbar{
+  height:52px;min-height:52px;
+  background:var(--glass-bg);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:10px;z-index:20;
+}
+.topbar-l{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.topbar-r{display:flex;align-items:center;gap:6px;flex-shrink:0}
+
+.status-pill{
+  display:flex;align-items:center;gap:6px;padding:4px 10px;
+  background:var(--surf2);border:1px solid var(--border);border-radius:99px;
+  font-size:11.5px;font-weight:500;color:var(--txt2);flex-shrink:0;
+}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--txt3);flex-shrink:0;transition:background .3s}
+.sdot.live{background:var(--low);animation:blink 2s infinite;box-shadow:0 0 6px var(--low)}
+.sdot.err{background:var(--high);box-shadow:0 0 6px var(--high)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.uptime{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txt3);white-space:nowrap}
+
+.btn-sm{
+  padding:6px 12px;
+  background:var(--surf2);border:1px solid var(--border);
+  border-radius:var(--r2);font-size:12px;font-weight:500;color:var(--txt2);
+  cursor:pointer;transition:var(--t);
+  display:flex;align-items:center;gap:4px;white-space:nowrap;
+}
+.btn-sm:hover{color:var(--txt);border-color:var(--border2);background:var(--surf3)}
+.btn-sm:active{transform:scale(.97)}
+
+.btn-burger{
+  display:none;width:34px;height:34px;
+  background:var(--surf2);border:1px solid var(--border);border-radius:var(--r2);
+  cursor:pointer;align-items:center;justify-content:center;
+  font-size:17px;color:var(--txt2);transition:var(--t);flex-shrink:0;
+}
+.btn-burger:hover{color:var(--txt)}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+
+/* ROW TOP */
+.row-top{display:grid;grid-template-columns:290px 1fr;gap:12px;min-height:200px}
+
+/* WEATHER */
+.weather-card{
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass);
+  -webkit-backdrop-filter:var(--glass);
+  border:1px solid var(--border);border-radius:var(--r);
+  padding:18px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow);transition:var(--t);
+}
+.weather-card::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:140px;height:140px;
+  background:radial-gradient(circle,var(--glow2) 0%,transparent 70%);
+  pointer-events:none;animation:weatherOrb 6s ease-in-out infinite alternate;
+  will-change:opacity;
+}
+@keyframes weatherOrb{0%{opacity:.5}100%{opacity:.9}}
+.weather-card:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,.5)}
+
+.w-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.w-temp{
+  font-size:42px;font-weight:800;letter-spacing:-2px;line-height:1;
+  background:linear-gradient(135deg,var(--txt),var(--acc2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.w-icon{font-size:38px;line-height:1;filter:drop-shadow(0 0 10px rgba(255,200,0,.4))}
+.w-desc{font-size:12px;color:var(--txt2);margin-top:3px;font-weight:500}
+.w-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ws{
+  background:var(--surf2);border-radius:var(--r2);padding:9px 11px;
+  border:1px solid var(--border);transition:var(--t);
+}
+.ws:hover{border-color:var(--border2)}
+.ws-l{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-weight:600}
+.ws-v{font-size:16px;font-weight:700}
+.ws-u{font-size:10px;color:var(--txt2)}
+
+/* MAP */
+.map-card{
+  background:var(--surf);border:1px solid var(--border);border-radius:var(--r);
+  overflow:hidden;position:relative;box-shadow:var(--shadow);
+  min-height:220px;
+}
+#map{width:100%;height:100%;min-height:220px;position:relative;z-index:1}
+.map-badge{
+  position:absolute;top:10px;left:10px;z-index:400;
+  background:rgba(5,5,16,.88);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:var(--r2);
+  padding:6px 11px;font-size:11px;font-weight:600;color:var(--txt2);
+  pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi-card{
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass);
+  -webkit-backdrop-filter:var(--glass);
+  border:1px solid var(--border);
+  border-radius:var(--r);padding:15px;
+  position:relative;overflow:hidden;transition:var(--t);cursor:default;
+  box-shadow:var(--shadow);
+}
+.kpi-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--kc,var(--acc));opacity:.7;
+  box-shadow:0 0 12px var(--kc,var(--acc));
+}
+.kpi-card::after{
+  content:'';position:absolute;bottom:-30px;right:-30px;
+  width:80px;height:80px;border-radius:50%;
+  background:radial-gradient(circle,var(--kc,var(--acc)) 0%,transparent 70%);
+  opacity:.06;pointer-events:none;transition:opacity var(--t);
+}
+.kpi-card:hover{transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.5);border-color:var(--border2)}
+.kpi-card:hover::after{opacity:.14;transform:scale(1.3)}
+.kpi-card.high{--kc:var(--high)}.kpi-card.medium{--kc:var(--mid)}.kpi-card.low{--kc:var(--low)}
+.kpi-label{font-size:11px;color:var(--txt2);font-weight:500;margin-bottom:7px;line-height:1.3}
+.kpi-val{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;line-height:1;
+  transition:color .4s}
+.kpi-card.high .kpi-val{color:var(--high)}.kpi-card.medium .kpi-val{color:var(--mid)}.kpi-card.low .kpi-val{color:var(--low)}
+.kpi-foot{display:flex;align-items:center;justify-content:space-between}
+.badge{padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.3px}
+.badge.high{background:rgba(255,79,79,.15);color:var(--high);border:1px solid rgba(255,79,79,.2)}
+.badge.medium{background:rgba(255,179,0,.15);color:var(--mid);border:1px solid rgba(255,179,0,.2)}
+.badge.low{background:rgba(0,230,118,.15);color:var(--low);border:1px solid rgba(0,230,118,.2)}
+.kpi-src{font-size:10px;color:var(--txt3)}
+
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass);
+  -webkit-backdrop-filter:var(--glass);
+  border:1px solid var(--border);border-radius:var(--r);padding:16px;
+  box-shadow:var(--shadow);transition:var(--t);
+}
+.card:hover{border-color:var(--border2)}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--txt2)}
+.ld{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.chart-h{height:196px;position:relative}
+
+/* PIE STATS */
+.pie-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:12px}
+.pie-stat{
+  background:var(--surf2);border-radius:var(--r2);padding:9px;text-align:center;
+  border:1px solid var(--border);transition:var(--t);
+}
+.pie-stat:hover{border-color:var(--border2);transform:translateY(-2px)}
+.ps-v{font-size:20px;font-weight:800}
+.ps-l{font-size:10px;color:var(--txt2);margin-top:1px}
+
+/* PROBLEMS */
+.prob-list{display:flex;flex-direction:column;gap:6px}
+.prob-row{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 13px;border-radius:var(--r2);
+  border:1px solid var(--border);
+  background:var(--surf2);
+  transition:var(--t);
+  animation:fadeUp .35s ease both;
+}
+.prob-row:hover{border-color:var(--border2);background:var(--surf3);transform:translateX(3px)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:transform .2s}
+.pdot.high{background:var(--high);box-shadow:0 0 10px var(--high)}
+.pdot.medium{background:var(--mid);box-shadow:0 0 8px var(--mid)}
+.pdot.low{background:var(--low);box-shadow:0 0 8px var(--low)}
+.prob-row:hover .pdot{transform:scale(1.4)}
+.pname{flex:1;font-size:12.5px;min-width:0}
+.psector{font-size:11px;color:var(--txt2);flex-shrink:0}
+
+/* ── CHAT OVERLAY ── */
+.chat-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,10,.65);z-index:1000;
+  align-items:center;justify-content:center;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.chat-overlay.open{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.chat-win{
+  background:rgba(8,8,24,.85);
+  backdrop-filter:blur(32px) saturate(200%);
+  -webkit-backdrop-filter:blur(32px) saturate(200%);
+  width:100%;max-width:620px;
+  height:88dvh;max-height:700px;border-radius:var(--r);
+  border:1px solid var(--border2);
+  box-shadow:0 40px 80px rgba(0,0,0,.8),0 0 0 1px rgba(124,111,255,.08),inset 0 1px 0 rgba(255,255,255,.05);
+  display:flex;flex-direction:column;overflow:hidden;margin:12px;
+  animation:winUp .28s cubic-bezier(.34,1.56,.64,1);
+}
+[data-theme="light"] .chat-win{background:rgba(250,250,255,.88)}
+@keyframes winUp{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:none}}
+
+.chat-head{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(13,13,34,.5);flex-shrink:0;
+}
+[data-theme="light"] .chat-head{background:rgba(255,255,255,.5)}
+.chat-av{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:15px;color:#fff;
+  box-shadow:0 4px 14px var(--glow);
+}
+.chat-name{font-weight:700;font-size:14px}
+.chat-sub{font-size:11px;color:var(--acc2);margin-top:1px}
+.btn-cls{
+  width:30px;height:30px;
+  background:var(--surf3);border:1px solid var(--border);
+  border-radius:99px;cursor:pointer;font-size:15px;color:var(--txt2);
+  display:flex;align-items:center;justify-content:center;transition:var(--t);
+}
+.btn-cls:hover{color:var(--txt);border-color:var(--border2);background:rgba(255,79,79,.15);color:var(--high)}
+
+.chat-msgs{
+  flex:1;overflow-y:auto;padding:16px;
+  display:flex;flex-direction:column;gap:12px;
+  background:rgba(5,5,16,.3);
+}
+[data-theme="light"] .chat-msgs{background:rgba(248,248,255,.3)}
+
+.cmsg{display:flex;gap:9px;animation:fadeUp .22s ease}
+.cmsg.user{flex-direction:row-reverse}
+.cav{
+  width:28px;height:28px;border-radius:9px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#fff;
+  box-shadow:0 2px 8px var(--glow);
+  flex-shrink:0;align-self:flex-start;
+}
+.cav.u{background:var(--surf3);color:var(--txt2);box-shadow:none}
+.bubble{
+  max-width:82%;padding:10px 14px;font-size:13px;line-height:1.6;
+  border-radius:14px;word-break:break-word;
+  white-space:pre-wrap;
+}
+.cmsg.ai .bubble{
+  background:rgba(13,13,40,.7);
+  backdrop-filter:blur(12px);
+  border:1px solid var(--border);
+  border-radius:4px 14px 14px 14px;
+}
+[data-theme="light"] .cmsg.ai .bubble{background:rgba(255,255,255,.75)}
+.cmsg.user .bubble{
+  background:linear-gradient(135deg,rgba(124,111,255,.25),rgba(0,229,255,.15));
+  border:1px solid var(--border2);
+  border-radius:14px 4px 14px 14px;
+}
+
+.typing{display:flex;gap:5px;align-items:center;padding:4px 0}
+.typing span{width:6px;height:6px;border-radius:50%;background:var(--acc);animation:bounce 1.4s infinite}
+.typing span:nth-child(2){animation-delay:.18s}
+.typing span:nth-child(3){animation-delay:.36s}
+@keyframes bounce{0%,60%,100%{transform:none;opacity:.35}30%{transform:translateY(-6px);opacity:1}}
+
+.chat-foot{
+  padding:12px 14px;border-top:1px solid var(--border);
+  background:rgba(8,8,24,.5);flex-shrink:0;
+}
+[data-theme="light"] .chat-foot{background:rgba(255,255,255,.5)}
+.qprompts{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.qbtn{
+  padding:4px 10px;background:var(--surf3);border:1px solid var(--border);
+  border-radius:99px;font-size:11px;color:var(--txt2);cursor:pointer;transition:var(--t);
+}
+.qbtn:hover{border-color:var(--acc);color:var(--acc);background:rgba(124,111,255,.1)}
+
+.img-prev{
+  display:none;align-items:center;gap:8px;margin-bottom:9px;
+  background:var(--surf2);border-radius:var(--r2);padding:7px 11px;border:1px solid var(--border);
+}
+.img-prev img{height:44px;border-radius:6px;object-fit:cover}
+.chat-row{display:flex;gap:7px;align-items:center}
+.chat-lbl{
+  width:36px;height:36px;background:var(--surf2);border:1px solid var(--border);
+  border-radius:var(--r2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;transition:var(--t);flex-shrink:0;
+}
+.chat-lbl:hover{border-color:var(--border2);background:var(--surf3)}
+.chat-inp{
+  flex:1;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r2);
+  padding:9px 13px;font-family:'Onest',sans-serif;font-size:13px;
+  color:var(--txt);outline:none;transition:var(--t);
+}
+.chat-inp::placeholder{color:var(--txt3)}
+.chat-inp:focus{border-color:var(--border2);background:var(--surf3);box-shadow:0 0 0 3px rgba(124,111,255,.1)}
+.btn-send{
+  width:36px;height:36px;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));
+  border:none;border-radius:var(--r2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:#fff;
+  box-shadow:0 4px 14px var(--glow);transition:var(--t);flex-shrink:0;
+}
+.btn-send:hover{transform:scale(1.08);filter:brightness(1.12)}
+.btn-send:active{transform:scale(.96)}
+
+/* Memory indicator */
+.mem-badge{
+  display:flex;align-items:center;gap:5px;
+  font-size:10px;color:var(--txt3);padding:3px 8px;
+  background:rgba(124,111,255,.08);border-radius:99px;
+  border:1px solid rgba(124,111,255,.15);margin-bottom:7px;
+}
+.mem-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:blink 3s infinite}
+
+/* SKELETON */
+@keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+.skel{
+  background:linear-gradient(90deg,var(--surf2) 25%,var(--surf3) 50%,var(--surf2) 75%);
+  background-size:200% 100%;animation:shimmer 1.6s infinite;border-radius:5px;
+}
+
+/* SIDEBAR OVERLAY (mobile) */
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:25;backdrop-filter:blur(3px)}
+.sb-overlay.on{display:block}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+  background:var(--surf3);border:1px solid var(--border2);border-radius:var(--r2);
+  padding:10px 20px;font-size:13px;font-weight:500;color:var(--txt);
+  z-index:200;box-shadow:var(--shadow);pointer-events:none;
+  animation:toastIn .28s ease;
+}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Leaflet dark */
+[data-theme="dark"] .leaflet-tile{filter:brightness(.68) contrast(1.1) saturate(.7)}
+[data-theme="dark"] .leaflet-container{background:var(--bg)}
+[data-theme="dark"] .leaflet-control-zoom a{
+  background:rgba(13,13,34,.9)!important;
+  color:var(--txt)!important;
+  border-color:var(--border)!important;
+}
+
+/* RESPONSIVE */
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.row-top{grid-template-columns:1fr}.charts-row{grid-template-columns:1fr}.map-card{height:180px}}
+@media(max-width:768px){
+  .sidebar{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%)}
+  .sidebar.on{transform:none}
+  .btn-burger{display:flex}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .uptime,.hide-mob{display:none}
+}
+@media(max-width:480px){
+  .kpi-val{font-size:22px}.content{padding:9px;gap:9px}
+  .chat-win{max-height:96dvh;border-radius:18px 18px 0 0;align-self:flex-end}
+  .chat-overlay{align-items:flex-end}
+}
+
+/* Count-up animation */
+@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.kpi-val.updated{animation:countUp .4s ease}
+</style>
 </head>
 <body>
+<div class="app">
+<div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
 
-<div class="noise-overlay"></div>
-
-<div class="dash">
-
-  <!-- ШАПКА -->
-  <header class="header">
-    <div class="header-left">
-      <div class="logo-wrap">
-        <div class="logo-hex">🏙</div>
-        <div class="logo-glow"></div>
-      </div>
-      <div class="header-title">
-        <h1>Smart City</h1>
-        <p class="subtitle">Акимат · Алматы</p>
-      </div>
-    </div>
-    <div class="header-right">
-      <div class="status-pill" id="statusPill">
-        <span class="status-dot" id="statusDot"></span>
-        <span class="update-time" id="updateTime">Загрузка...</span>
-      </div>
-      <button class="icon-btn" onclick="loadData()" title="Обновить">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
-      </button>
-      <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Переключить тему" id="themeBtn">
-        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- ПОГОДА -->
-  <div class="weather-bar" id="weatherBar">
-    <div class="weather-main">
-      <span id="wTemp" class="w-temp">—</span>
-      <span id="wDesc" class="w-desc">—</span>
-    </div>
-    <div class="weather-details">
-      <div class="w-item"><span class="w-icon">💧</span><span id="wHumidity">—</span><span class="w-unit">%</span></div>
-      <div class="w-item"><span class="w-icon">🌬</span><span id="wWind">—</span><span class="w-unit">м/с</span></div>
-      <div class="w-item"><span class="w-icon">👁</span><span id="wVis">—</span><span class="w-unit">км</span></div>
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🏙</div>
+    <div>
+      <div class="logo-title">Smart City</div>
+      <div class="logo-sub">Алматы · Control Center</div>
     </div>
   </div>
-
-  <!-- ТАБЫ -->
-  <nav class="tabs" role="tablist">
-    <button class="tab active" onclick="setSection('all', this)" role="tab">Все</button>
-    <button class="tab" onclick="setSection('transport', this)" role="tab"><span class="tab-icon">🚗</span>Транспорт</button>
-    <button class="tab" onclick="setSection('ecology', this)" role="tab"><span class="tab-icon">🌫</span>Экология</button>
-    <button class="tab" onclick="setSection('safety', this)" role="tab"><span class="tab-icon">🛡</span>Безопасность</button>
-    <button class="tab" onclick="setSection('zhkh', this)" role="tab"><span class="tab-icon">🔧</span>ЖКХ</button>
+  <nav class="nav">
+    <a class="nav-item active" onclick="setSection('all',this)"><span class="nav-icon">📊</span>Главная панель</a>
+    <a class="nav-item" onclick="setSection('transport',this)"><span class="nav-icon">🚗</span>Транспорт</a>
+    <a class="nav-item" onclick="setSection('ecology',this)"><span class="nav-icon">🌫</span>Экология</a>
+    <a class="nav-item" onclick="setSection('safety',this)"><span class="nav-icon">🛡</span>Безопасность</a>
+    <a class="nav-item" onclick="setSection('zhkh',this)"><span class="nav-icon">🔧</span>ЖКХ</a>
   </nav>
-
-  <!-- KPI -->
-  <div class="kpi-grid" id="kpiGrid">
-    <div class="kpi-skeleton"></div>
-    <div class="kpi-skeleton"></div>
-    <div class="kpi-skeleton"></div>
-    <div class="kpi-skeleton"></div>
+  <div class="sidebar-foot">
+    <button class="btn-ai" onclick="toggleChat()">💬 Алем AI Ассистент</button>
+    <button class="btn-theme" onclick="toggleTheme()">🌓 Сменить тему</button>
   </div>
+</aside>
 
-  <!-- ГРАФИКИ -->
-  <div class="charts-grid">
-    <div class="chart-card">
-      <div class="chart-header">
-        <span class="chart-title">Динамика за 24 часа</span>
-        <div class="legend" id="lineLegend"></div>
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-l">
+      <button class="btn-burger" onclick="toggleSidebar()">☰</button>
+      <div class="status-pill">
+        <div class="sdot" id="sdot"></div>
+        <span id="stxt">Загрузка...</span>
       </div>
-      <div class="chart-wrap">
-        <canvas id="lineChart"></canvas>
-      </div>
+      <div class="uptime" id="uptime"></div>
     </div>
-    <div class="chart-card">
-      <div class="chart-header">
-        <span class="chart-title">Уровни проблем</span>
-      </div>
-      <div class="chart-wrap pie-wrap">
-        <canvas id="pieChart"></canvas>
-      </div>
-      <div class="pie-stats" id="pieStats"></div>
+    <div class="topbar-r">
+      <button class="btn-sm hide-mob" onclick="loadData()">⟳ Обновить</button>
+      <button class="btn-sm hide-mob" onclick="exportData()">↓ JSON</button>
+      <button class="btn-sm" onclick="toggleFS()">⛶</button>
     </div>
   </div>
 
-  <!-- ПРОБЛЕМЫ -->
-  <div class="section-card">
-    <div class="section-title">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      Проблемные ситуации
-    </div>
-    <div id="problemsList"></div>
-  </div>
-
-  <!-- ЧАТ -->
-  <div class="section-card chat-card">
-    <div class="section-title">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Алем — AI Ассистент Акимата
-    </div>
-    <div id="chatMessages" class="chat-messages">
-      <div class="chat-msg ai">
-        <div class="ai-avatar">А</div>
-        <div class="msg-bubble">Здравствуйте! Я Алем, AI-ассистент Акимата Алматы. Я вижу актуальные данные города и готов ответить на ваши вопросы.</div>
+  <div class="content">
+    <div class="row-top">
+      <div class="weather-card">
+        <div class="w-top">
+          <div>
+            <div class="w-temp" id="wTemp">—°</div>
+            <div class="w-desc" id="wDesc">загружаем...</div>
+          </div>
+          <div class="w-icon" id="wIcon">🌤</div>
+        </div>
+        <div class="w-grid">
+          <div class="ws"><div class="ws-l">Ощущается</div><div class="ws-v"><span id="wFeels">—</span><span class="ws-u">°C</span></div></div>
+          <div class="ws"><div class="ws-l">Влажность</div><div class="ws-v"><span id="wHum">—</span><span class="ws-u">%</span></div></div>
+          <div class="ws"><div class="ws-l">Ветер</div><div class="ws-v"><span id="wWind">—</span><span class="ws-u"> м/с</span></div></div>
+          <div class="ws"><div class="ws-l">Видимость</div><div class="ws-v"><span id="wVis">—</span><span class="ws-u"> км</span></div></div>
+        </div>
+      </div>
+      <div class="map-card">
+        <div class="map-badge">📍 Алматы, Казахстан</div>
+        <div id="mapLegend" style="position:absolute;bottom:10px;left:10px;z-index:400;background:rgba(5,5,16,.88);backdrop-filter:blur(12px);border:1px solid rgba(120,110,255,.2);border-radius:10px;padding:5px 10px;display:flex;gap:8px;align-items:center;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4)"></div>
+        <div id="map"></div>
       </div>
     </div>
-    <div id="imagePreview" class="image-preview" style="display:none;">
-      <img id="previewImg" class="preview-img" alt="preview">
-      <button onclick="removeImage()" class="remove-img-btn" title="Удалить фото">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card low"><div class="kpi-label skel" style="height:11px;width:65%;margin-bottom:9px"></div><div class="kpi-val skel" style="height:26px;width:45%;margin-bottom:9px"></div></div>
+      <div class="kpi-card low"><div class="kpi-label skel" style="height:11px;width:65%;margin-bottom:9px"></div><div class="kpi-val skel" style="height:26px;width:45%;margin-bottom:9px"></div></div>
+      <div class="kpi-card low"><div class="kpi-label skel" style="height:11px;width:65%;margin-bottom:9px"></div><div class="kpi-val skel" style="height:26px;width:45%;margin-bottom:9px"></div></div>
+      <div class="kpi-card low"><div class="kpi-label skel" style="height:11px;width:65%;margin-bottom:9px"></div><div class="kpi-val skel" style="height:26px;width:45%;margin-bottom:9px"></div></div>
     </div>
-    <div class="chat-input-row">
-      <label class="upload-btn" title="Прикрепить фото">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <input type="file" accept="image/*" onchange="handleImageUpload(event)" style="display:none">
-      </label>
-      <input type="text" id="chatInput" class="chat-input"
-        placeholder="Задайте вопрос про Алматы..."
-        onkeydown="if(event.key==='Enter') sendChat()">
-      <button class="send-btn" onclick="sendChat()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
+
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">📈 Динамика за сессию</div>
+          <div class="legend" id="lineLegend"></div>
+        </div>
+        <div class="chart-h"><canvas id="lineChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">🎯 Уровни проблем</div></div>
+        <div class="chart-h"><canvas id="pieChart"></canvas></div>
+        <div class="pie-stats" id="pieStats"></div>
+      </div>
     </div>
-    <p class="chat-hint">Ctrl+V — вставить скриншот</p>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">⚠️ Проблемные ситуации</div>
+        <div style="font-size:11px;color:var(--txt3)" id="probCount"></div>
+      </div>
+      <div class="prob-list" id="probList">
+        <div class="prob-row"><div class="pdot low"></div><div class="pname" style="color:var(--txt2)">Загружаем данные...</div></div>
+      </div>
+    </div>
   </div>
+</div>
+
+<!-- CHAT -->
+<div class="chat-overlay" id="chatPanel" onclick="if(event.target.id==='chatPanel')toggleChat()">
+  <div class="chat-win" onclick="event.stopPropagation()">
+    <div class="chat-head">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div class="chat-av">А</div>
+        <div>
+          <div class="chat-name">Алем — AI Ассистент Акимата</div>
+          <div class="chat-sub">● онлайн · видит данные города в реальном времени</div>
+        </div>
+      </div>
+      <button class="btn-cls" onclick="toggleChat()">✕</button>
+    </div>
+    <div class="chat-msgs" id="chatMsgs">
+      <!-- Messages injected here -->
+    </div>
+    <div class="chat-foot">
+      <div class="mem-badge">
+        <div class="mem-dot"></div>
+        <span id="memStatus">Память: загружается...</span>
+      </div>
+      <div class="qprompts">
+        <button class="qbtn" onclick="sendQ('Как качество воздуха сегодня?')">🌫 Воздух</button>
+        <button class="qbtn" onclick="sendQ('Пробки сейчас в городе?')">🚗 Пробки</button>
+        <button class="qbtn" onclick="sendQ('Есть ли аварии ЖКХ?')">🔧 ЖКХ</button>
+        <button class="qbtn" onclick="sendQ('Дай полную сводку по городу')">📊 Сводка</button>
+        <button class="qbtn" onclick="clearMemory()">🗑 Очистить память</button>
+      </div>
+      <div class="img-prev" id="imgPrev">
+        <img id="prevImg" src="" alt="">
+        <span style="flex:1;font-size:12px;color:var(--txt2)">Фото прикреплено</span>
+        <button style="background:none;border:none;color:var(--txt3);cursor:pointer;font-size:15px" onclick="rmImg()">✕</button>
+      </div>
+      <div class="chat-row">
+        <label class="chat-lbl" for="fileIn" title="Прикрепить фото">📎
+          <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="onImg(event)">
+        </label>
+        <input type="text" id="chatInp" class="chat-inp" placeholder="Спроси про Алматы..."
+               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}">
+        <button class="btn-send" onclick="sendChat()">↑</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </div>
 
-<script src="script.js"></script>
+<script>
+// ══════════════════════════════════════════════════════
+//  SMART CITY ALMATY — STANDALONE (no PHP backend)
+//  Real data: Open-Meteo API directly from browser
+//  AI: Anthropic API via claude.ai proxy (if available)
+//     or fallback to smart rule-based responses
+//  Memory: localStorage with full conversation history
+// ══════════════════════════════════════════════════════
+
+const ALMATY_LAT = 43.2220;
+const ALMATY_LON = 76.8512;
+const MEM_KEY = 'smartcity_almaty_chat_v2';
+const MAX_MEM = 40; // max messages in memory
+
+let liveData = null;
+let currentSection = 'all';
+let lineChart, pieChart, mapInst;
+let mapMarkers = [];
+let currentImage = null;
+let chatHistory = []; // [{role,content,time}]
+let isAISending = false;
+let hist = { labels:[], traffic:[], aqi:[], inc:[], zhkh:[] };
+
+// ─── THEME ───────────────────────────────────────────
+function toggleTheme() {
+  const el = document.documentElement;
+  const next = el.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  el.setAttribute('data-theme', next);
+  localStorage.setItem('sc_theme', next);
+  updateChartTheme();
+  if (mapInst) {
+    document.getElementById('map').style.filter =
+      next === 'dark' ? 'brightness(.68) contrast(1.1) saturate(.7)' : '';
+  }
+}
+(()=>{
+  const s = localStorage.getItem('sc_theme');
+  const p = window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', s || p);
+})();
+
+// ─── SIDEBAR ─────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('on');
+  document.getElementById('sbOverlay').classList.toggle('on');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('on');
+  document.getElementById('sbOverlay').classList.remove('on');
+}
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => { if (window.innerWidth < 769) closeSidebar(); });
+});
+
+// ─── MAP ─────────────────────────────────────────────
+const ALMATY_CENTER = [43.2220, 76.8512];
+const MC = { high: '#ff4f4f', medium: '#ffb300', low: '#00e676' };
+const MC_DARK = { high: '#ff2020', medium: '#e69900', low: '#00c95a' };
+
+// Icon factory — category shapes
+function mkIcon(c, shape, size) {
+  const sz = size || 14;
+  const col = MC[c] || MC.low;
+  const dark = MC_DARK[c] || col;
+  let inner = '';
+  if (shape === 'square') {
+    inner = `<div style="width:${sz}px;height:${sz}px;border-radius:3px;background:${col};border:2px solid rgba(255,255,255,.9);box-shadow:0 0 10px ${dark}99,0 2px 6px rgba(0,0,0,.5)"></div>`;
+  } else if (shape === 'diamond') {
+    inner = `<div style="width:${sz}px;height:${sz}px;background:${col};border:2px solid rgba(255,255,255,.9);box-shadow:0 0 10px ${dark}99;transform:rotate(45deg);border-radius:2px"></div>`;
+  } else if (shape === 'triangle') {
+    inner = `<div style="width:0;height:0;border-left:${sz/2}px solid transparent;border-right:${sz/2}px solid transparent;border-bottom:${sz}px solid ${col};filter:drop-shadow(0 0 4px ${dark})"></div>`;
+  } else {
+    // circle (default)
+    inner = `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${col};border:2px solid rgba(255,255,255,.9);box-shadow:0 0 12px ${dark}99,0 2px 6px rgba(0,0,0,.5)"></div>`;
+  }
+  return L.divIcon({ className: '', html: inner, iconSize: [sz, sz], iconAnchor: [sz/2, sz/2] });
+}
+
+function initMap() {
+  if (typeof L === 'undefined') { console.warn('Leaflet не загружен'); return; }
+  try {
+    // Almaty bounding box with a small padding
+    const ALMATY_BOUNDS = L.latLngBounds(
+      L.latLng(43.05, 76.58),  // SW corner
+      L.latLng(43.47, 77.15)   // NE corner
+    );
+
+    mapInst = L.map('map', {
+      zoomControl: false,
+      attributionControl: false,
+      preferCanvas: true,
+      minZoom: 11,
+      maxBounds: ALMATY_BOUNDS,
+      maxBoundsViscosity: 1.0   // hard border — нельзя вытащить карту за пределы
+    }).setView(ALMATY_CENTER, 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      errorTileUrl: '',
+    }).addTo(mapInst);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(mapInst);
+
+    // Force correct size after layout
+    setTimeout(() => { if (mapInst) mapInst.invalidateSize(); }, 300);
+    setTimeout(() => { if (mapInst) mapInst.invalidateSize(); }, 800);
+  } catch(e) { console.error('Map init failed:', e); }
+}
+
+function updateMap() {
+  if (!mapInst || !liveData) return;
+  try {
+    // Remove old markers safely
+    mapMarkers.forEach(m => { try { mapInst.removeLayer(m); } catch {} });
+    mapMarkers = [];
+
+    const d = liveData;
+    const tl = d.traffic?.level  || 'low';
+    const al = d.air?.level      || 'low';
+    const sl = d.safety?.level   || 'low';
+    const zl = d.zhkh?.level     || 'low';
+    const wvis = (d.weather?.visibility || 10);
+    const vl = wvis < 3 ? 'high' : wvis < 7 ? 'medium' : 'low';
+
+    // ── TRAFFIC points (circle) ──
+    const trafficPts = [
+      { lat: 43.2503, lng: 76.9156, name: '🚗 Аль-Фараби / Достык', detail: `Загруженность ${d.traffic?.load}%` },
+      { lat: 43.2380, lng: 76.8890, name: '🚗 пр. Абая / пр. Назарбаева', detail: `Ср. время: ${d.traffic?.avg_time} мин` },
+      { lat: 43.2200, lng: 76.8500, name: '🚗 пр. Райымбека', detail: d.traffic?.peak ? '⏰ Час пик' : 'Вне пика' },
+      { lat: 43.2650, lng: 76.8700, name: '🚗 ул. Тимирязева', detail: `Уровень: ${tl}` },
+      { lat: 43.2100, lng: 76.9100, name: '🚗 Саяхат (Восток)', detail: `Загруженность ${d.traffic?.load}%` },
+    ];
+
+    // ── AIR QUALITY points (diamond) ──
+    const airPts = [
+      { lat: 43.2280, lng: 76.8450, name: '🌫 Датчик воздуха: Алмалинский', detail: `AQI ${d.air?.aqi}, PM2.5=${d.air?.pm25}` },
+      { lat: 43.2550, lng: 76.9300, name: '🌫 Датчик воздуха: Медеуский', detail: `PM10=${d.air?.pm10}, NO2=${d.air?.no2}` },
+      { lat: 43.1950, lng: 76.8700, name: '🌫 Датчик воздуха: Турксибский', detail: `AQI ${d.air?.aqi}` },
+      { lat: 43.2400, lng: 76.8200, name: '🌫 Датчик воздуха: Бостандык', detail: `AQI ${d.air?.aqi}` },
+    ];
+
+    // ── WATER OFF / ZhKH points (square) ──
+    const zhkhPts = [
+      { lat: 43.2320, lng: 76.8600, name: '🔧 ЖКХ: Центральный р-н', detail: `Аварий: ${d.zhkh?.accidents}, Жалоб: ${d.zhkh?.complaints}` },
+      { lat: 43.2050, lng: 76.8400, name: `💧 ${d.zhkh?.water_off > 0 ? 'Отключение воды' : 'Вода в норме'}: ул. Розыбакиева`, detail: `Выполнение заявок: ${d.zhkh?.execution}%` },
+      { lat: 43.2700, lng: 76.8950, name: '🔧 ЖКХ: Алатауский р-н', detail: `Жалоб: ${d.zhkh?.complaints}` },
+      { lat: 43.1880, lng: 76.9200, name: `💧 ${d.zhkh?.water_off > 1 ? 'Отключение воды' : 'Вода в норме'}: Турксибский`, detail: `Аварий: ${d.zhkh?.accidents}` },
+    ];
+
+    // ── SAFETY points (triangle) ──
+    const safetyPts = [
+      { lat: 43.2430, lng: 76.8750, name: '🛡 Безопасность: Медеу', detail: `Инцидентов: ${d.safety?.incidents}` },
+      { lat: 43.2150, lng: 76.8600, name: '🛡 ДТП-зона: пр. Сейфуллина', detail: `ДТП: ${d.safety?.dtp}, реагирование: ${d.safety?.response} мин` },
+      { lat: 43.2580, lng: 76.8400, name: '🛡 Безопасность: Бостандык', detail: `Реагирование: ${d.safety?.response} мин` },
+      { lat: 43.2000, lng: 76.8800, name: '🛡 ДТП-зона: ул. Жандосова', detail: `Инцидентов: ${d.safety?.incidents}` },
+    ];
+
+    // ── WEATHER/VISIBILITY (circle, smaller) ──
+    const weatherPts = [
+      { lat: 43.2220, lng: 76.8512, name: `${d.weather?.icon || '🌤'} Погода центр: ${d.weather?.temp}°C`, detail: `${d.weather?.desc}, вид. ${d.weather?.visibility} км` },
+      { lat: 43.2900, lng: 76.9400, name: `🏔 Горная зона`, detail: `Видимость: ${d.weather?.visibility} км` },
+    ];
+
+    const addPoints = (pts, level, shape, sz) => {
+      pts.forEach(p => {
+        try {
+          const m = L.marker([p.lat, p.lng], { icon: mkIcon(level, shape, sz) })
+            .addTo(mapInst)
+            .bindPopup(
+              `<div style="font-family:sans-serif;font-size:12px;min-width:180px">
+                <b style="font-size:13px">${p.name}</b><br>
+                <span style="color:#666">${p.detail}</span><br>
+                <span style="padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;background:${MC[level]}22;color:${MC[level]}">${level.toUpperCase()}</span>
+              </div>`,
+              { maxWidth: 220 }
+            );
+          mapMarkers.push(m);
+        } catch(e) { console.warn('Marker error:', e); }
+      });
+    };
+
+    addPoints(trafficPts, tl, 'circle', 13);
+    addPoints(airPts, al, 'diamond', 14);
+    addPoints(zhkhPts, zl, 'square', 12);
+    addPoints(safetyPts, sl, 'triangle', 13);
+    addPoints(weatherPts, vl, 'circle', 10);
+
+    // Map legend overlay
+    const legendEl = document.getElementById('mapLegend');
+    if (legendEl) {
+      legendEl.innerHTML = [
+        ['⬤ Трафик', tl], ['◆ Воздух', al], ['■ ЖКХ', zl], ['▲ Безопасность', sl]
+      ].map(([lbl, lvl]) =>
+        `<span style="color:${MC[lvl]};font-size:10px;font-weight:600;white-space:nowrap">${lbl}</span>`
+      ).join('<span style="opacity:.3"> | </span>');
+    }
+  } catch(e) { console.error('updateMap error:', e); }
+}
+
+// ─── REAL DATA: Open-Meteo API ────────────────────────
+async function fetchWeather() {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${ALMATY_LAT}&longitude=${ALMATY_LON}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,visibility,weather_code&wind_speed_unit=ms`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('weather api');
+    const d = await res.json();
+    const c = d.current;
+    const wc = c.weather_code ?? 0;
+    let icon = '🌤', desc = 'Ясно';
+    if (wc <= 1) { icon = '☀️'; desc = 'Ясно'; }
+    else if (wc <= 3) { icon = '⛅'; desc = 'Переменная облачность'; }
+    else if (wc <= 48) { icon = '🌫'; desc = 'Туман'; }
+    else if (wc <= 67) { icon = '🌧'; desc = 'Дождь'; }
+    else if (wc <= 77) { icon = '❄️'; desc = 'Снег'; }
+    else if (wc <= 82) { icon = '🌦'; desc = 'Ливень'; }
+    else { icon = '⛈'; desc = 'Гроза'; }
+    const temp = Math.round(c.temperature_2m ?? 0);
+    return {
+      temp, icon, desc,
+      feels_like: Math.round(c.apparent_temperature ?? 0),
+      humidity: Math.round(c.relative_humidity_2m ?? 0),
+      wind_speed: Math.round((c.wind_speed_10m ?? 0) * 10) / 10,
+      visibility: Math.round((c.visibility ?? 10000) / 100) / 10,
+      source: 'live_open_meteo'
+    };
+  } catch {
+    return { temp: 18, icon: '🌤', desc: 'Данные недоступны', feels_like: 16, humidity: 40, wind_speed: 3, visibility: 10, source: 'fallback' };
+  }
+}
+
+async function fetchAirQuality() {
+  try {
+    const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${ALMATY_LAT}&longitude=${ALMATY_LON}&current=pm10,pm2_5,nitrogen_dioxide,european_aqi`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('air api');
+    const d = await res.json();
+    const c = d.current;
+    const aqi = Math.round(c.european_aqi ?? 50);
+    return {
+      aqi,
+      pm25: Math.round((c.pm2_5 ?? 0) * 10) / 10,
+      pm10: Math.round((c.pm10 ?? 0) * 10) / 10,
+      no2: Math.round((c.nitrogen_dioxide ?? 0) * 10) / 10,
+      level: aqi > 75 ? 'high' : aqi > 50 ? 'medium' : 'low',
+      source: 'live_open_meteo'
+    };
+  } catch {
+    return { aqi: 55, pm25: 18, pm10: 32, no2: 16, level: 'medium', source: 'fallback' };
+  }
+}
+
+function calcTraffic() {
+  const now = new Date();
+  const tz = now.getTimezoneOffset(); // local
+  const almatyOffset = 5 * 60; // UTC+5
+  const almatyMin = (now.getUTCHours() * 60 + now.getUTCMinutes() + almatyOffset) % 1440;
+  const h = Math.floor(almatyMin / 60);
+  const isPeak = (h >= 8 && h <= 10) || (h >= 17 && h <= 20);
+  const isNight = h >= 23 || h <= 5;
+  const load = isNight ? (15 + Math.round(Math.random() * 15)) : isPeak ? (72 + Math.round(Math.random() * 20)) : (35 + Math.round(Math.random() * 25));
+  return {
+    load,
+    level: load > 70 ? 'high' : load > 40 ? 'medium' : 'low',
+    avg_time: isPeak ? 38 + Math.round(Math.random() * 10) : 16 + Math.round(Math.random() * 8),
+    peak: isPeak,
+    source: 'almaty_time_model'
+  };
+}
+
+function calcSafety() {
+  const now = new Date();
+  const h = (now.getUTCHours() + 5) % 24;
+  const isActive = h >= 10 && h <= 22;
+  const inc = isActive ? 3 + Math.round(Math.random() * 5) : 1 + Math.round(Math.random() * 2);
+  const dtp = Math.max(0, inc - 2);
+  return {
+    incidents: inc, dtp, response: 6 + Math.round(Math.random() * 6),
+    level: inc > 6 ? 'high' : inc > 3 ? 'medium' : 'low',
+    source: 'almaty_model', details: []
+  };
+}
+
+function calcZhkh() {
+  const acc = Math.round(Math.random() * 3);
+  const comp = 60 + Math.round(Math.random() * 80);
+  const exec = 78 + Math.round(Math.random() * 15);
+  return {
+    accidents: acc, water_off: Math.max(0, acc - 1),
+    complaints: comp, execution: exec,
+    level: acc > 2 || comp > 130 ? 'high' : acc > 0 ? 'medium' : 'low',
+    source: 'almaty_model', details: []
+  };
+}
+
+let isLoadingData = false;
+async function loadData() {
+  if (isLoadingData) return;
+  isLoadingData = true;
+  const sdot = document.getElementById('sdot');
+  const stxt = document.getElementById('stxt');
+  if (sdot) sdot.className = 'sdot';
+  if (stxt) stxt.textContent = 'Обновляю...';
+  try {
+    const [weather, air] = await Promise.all([
+      fetchWeather().catch(() => ({ temp:18,icon:'🌤',desc:'—',feels_like:16,humidity:40,wind_speed:3,visibility:10,source:'fallback' })),
+      fetchAirQuality().catch(() => ({ aqi:55,pm25:18,pm10:32,no2:16,level:'medium',source:'fallback' }))
+    ]);
+    const traffic = calcTraffic();
+    const safety  = calcSafety();
+    const zhkh    = calcZhkh();
+
+    liveData = { weather, air, traffic, safety, zhkh };
+    liveData.updated_at = (() => {
+      const d = new Date();
+      return String((d.getUTCHours() + 5) % 24).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+    })();
+
+    if (sdot) sdot.className = 'sdot live';
+    if (stxt) stxt.textContent = 'Обновлено в ' + liveData.updated_at;
+
+    try { updateWeather(weather); } catch(e) { console.error('weather render:', e); }
+    try { updateHistory(); } catch(e) {}
+    try { renderKPI(currentSection); } catch(e) { console.error('kpi render:', e); }
+    try { renderProblems(); } catch(e) { console.error('problems render:', e); }
+    try { updateCharts(); } catch(e) { console.error('charts:', e); }
+    try { updateMap(); } catch(e) { console.error('map update:', e); }
+  } catch(e) {
+    console.error('loadData failed:', e);
+    if (sdot) sdot.className = 'sdot err';
+    if (stxt) stxt.textContent = 'Ошибка — повтор через 5 мин';
+  } finally {
+    isLoadingData = false;
+  }
+}
+
+// ─── WEATHER ──────────────────────────────────────────
+function updateWeather(w) {
+  if (!w) return;
+  animVal('wTemp', w.temp + '°C');
+  document.getElementById('wDesc').textContent = w.desc;
+  document.getElementById('wIcon').textContent = w.icon;
+  animVal('wFeels', w.feels_like);
+  animVal('wHum', w.humidity);
+  animVal('wWind', w.wind_speed);
+  animVal('wVis', w.visibility);
+}
+
+function animVal(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(4px)';
+  setTimeout(() => {
+    el.textContent = val;
+    el.style.transition = 'opacity .3s, transform .3s';
+    el.style.opacity = '1';
+    el.style.transform = 'none';
+  }, 100);
+}
+
+// ─── HISTORY ─────────────────────────────────────────
+function updateHistory() {
+  if (!liveData) return;
+  const now = new Date();
+  const label = String((now.getUTCHours() + 5) % 24).padStart(2, '0') + ':' + String(now.getUTCMinutes()).padStart(2, '0');
+  const max = 12;
+  if (hist.labels.length >= max) {
+    ['labels','traffic','aqi','inc','zhkh'].forEach(k => hist[k].shift());
+  }
+  hist.labels.push(label);
+  hist.traffic.push(liveData.traffic?.load ?? 0);
+  hist.aqi.push(liveData.air?.aqi ?? 0);
+  hist.inc.push((liveData.safety?.incidents ?? 0) * 8);
+  hist.zhkh.push((liveData.zhkh?.accidents ?? 0) * 20);
+}
+
+// ─── SECTIONS / KPI ───────────────────────────────────
+function setSection(section, el) {
+  currentSection = section;
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderKPI(section);
+}
+
+const ll = { high: 'Критично', medium: 'Внимание', low: 'Норма' };
+const srcTag = s => {
+  if (!s) return '';
+  if (s.includes('live_multi') || s.includes('multi_source')) return '🟠 live alts+azhk';
+  if (s.includes('live') || s.includes('open')) return '🟢 live API';
+  if (s.includes('model') || s.includes('time')) return '🔵 расчёт';
+  if (s.includes('serper') || s.includes('google')) return '🟠 Google news';
+  return '⚪ —';
+};
+
+function renderKPI(section) {
+  if (!liveData) return;
+  const d = liveData;
+  const sections = {
+    all: [
+      { label: 'Загруженность дорог', value: (d.traffic?.load ?? '—') + '%', level: d.traffic?.level, source: d.traffic?.source },
+      { label: 'Качество воздуха AQI', value: d.air?.aqi ?? '—', level: d.air?.level, source: d.air?.source },
+      { label: 'Инциденты / сутки', value: d.safety?.incidents ?? '—', level: d.safety?.level, source: d.safety?.source },
+      { label: 'Аварии ЖКХ', value: d.zhkh?.accidents ?? '—', level: d.zhkh?.level, source: d.zhkh?.source },
+    ],
+    transport: [
+      { label: 'Загруженность дорог', value: (d.traffic?.load ?? '—') + '%', level: d.traffic?.level, source: d.traffic?.source },
+      { label: 'Среднее время в пути', value: (d.traffic?.avg_time ?? '—') + ' мин', level: d.traffic?.level },
+      { label: 'Температура', value: (d.weather?.temp ?? '—') + '°C', level: 'low' },
+      { label: 'Видимость на дорогах', value: (d.weather?.visibility ?? '—') + ' км', level: (d.weather?.visibility < 3) ? 'high' : (d.weather?.visibility < 7) ? 'medium' : 'low' },
+    ],
+    ecology: [
+      { label: 'AQI (индекс воздуха)', value: d.air?.aqi ?? '—', level: d.air?.level, source: d.air?.source },
+      { label: 'PM2.5 (мкг/м³)', value: d.air?.pm25 ?? '—', level: (d.air?.pm25 > 55) ? 'high' : (d.air?.pm25 > 25) ? 'medium' : 'low' },
+      { label: 'NO2 (мкг/м³)', value: d.air?.no2 ?? '—', level: (d.air?.no2 > 40) ? 'high' : (d.air?.no2 > 20) ? 'medium' : 'low' },
+      { label: 'Влажность воздуха', value: (d.weather?.humidity ?? '—') + '%', level: 'low' },
+    ],
+    safety: [
+      { label: 'Инциденты / сутки', value: d.safety?.incidents ?? '—', level: d.safety?.level },
+      { label: 'Время реагирования', value: (d.safety?.response ?? '—') + ' мин', level: (d.safety?.response > 10) ? 'high' : (d.safety?.response > 7) ? 'medium' : 'low' },
+      { label: 'ДТП за сутки', value: d.safety?.dtp ?? '—', level: (d.safety?.dtp > 3) ? 'high' : (d.safety?.dtp > 1) ? 'medium' : 'low' },
+      { label: 'Темп. воздуха', value: (d.weather?.temp ?? '—') + '°C', level: 'low' },
+    ],
+    zhkh: [
+      { label: 'Аварии ЖКХ', value: d.zhkh?.accidents ?? '—', level: d.zhkh?.level, source: d.zhkh?.source },
+      { label: 'Отключения воды', value: d.zhkh?.water_off ?? '—', level: (d.zhkh?.water_off > 3) ? 'high' : (d.zhkh?.water_off > 0) ? 'medium' : 'low' },
+      { label: 'Откл. тепла и эл-ва', value: ((d.zhkh?.heat_off ?? 0) + (d.zhkh?.electric_off ?? 0)), level: ((d.zhkh?.heat_off ?? 0) + (d.zhkh?.electric_off ?? 0)) > 2 ? 'high' : ((d.zhkh?.heat_off ?? 0) + (d.zhkh?.electric_off ?? 0)) > 0 ? 'medium' : 'low' },
+      { label: 'Выполнение заявок', value: (d.zhkh?.execution ?? '—') + '%', level: (d.zhkh?.execution < 70) ? 'high' : (d.zhkh?.execution < 85) ? 'medium' : 'low' },
+    ]
+  };
+  const kpis = sections[section] || sections.all;
+  document.getElementById('kpiGrid').innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.level || 'low'}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-val">${k.value ?? '—'}</div>
+      <div class="kpi-foot">
+        <span class="badge ${k.level || 'low'}">${ll[k.level] || 'Норма'}</span>
+        <span class="kpi-src">${srcTag(k.source)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── PROBLEMS ─────────────────────────────────────────
+function renderProblems() {
+  if (!liveData) return;
+  const d = liveData;
+  const problems = [];
+  if (d.air?.level === 'high') problems.push({ name: `Превышение нормы AQI: ${d.air.aqi} (PM2.5: ${d.air.pm25} мкг/м³)`, sector: 'Экология', level: 'high' });
+  if (d.traffic?.level === 'high') problems.push({ name: `Критическая загруженность: ${d.traffic.load}% (${d.traffic.peak ? 'час пик' : 'вне пика'})`, sector: 'Транспорт', level: 'high' });
+  if ((d.safety?.dtp ?? 0) > 3) problems.push({ name: `Высокое число ДТП: ${d.safety.dtp}`, sector: 'Безопасность', level: 'high' });
+  if ((d.zhkh?.complaints ?? 0) > 150) problems.push({ name: `Большое число жалоб: ${d.zhkh.complaints}`, sector: 'ЖКХ', level: 'high' });
+  if (d.air?.level === 'medium') problems.push({ name: `Умеренное загрязнение: AQI ${d.air.aqi}`, sector: 'Экология', level: 'medium' });
+  if (d.traffic?.level === 'medium') problems.push({ name: `Повышенная загруженность: ${d.traffic.load}%`, sector: 'Транспорт', level: 'medium' });
+  if ((d.zhkh?.water_off ?? 0) > 0) problems.push({ name: `Отключения воды: ${d.zhkh.water_off} случаев`, sector: 'ЖКХ', level: 'medium' });
+  if ((d.safety?.response ?? 0) > 9) problems.push({ name: `Долгое реагирование: ${d.safety.response} мин`, sector: 'Безопасность', level: 'medium' });
+  if ((d.weather?.visibility ?? 99) < 5) problems.push({ name: `Плохая видимость: ${d.weather.visibility} км`, sector: 'Транспорт', level: 'medium' });
+  if (problems.length === 0) problems.push({ name: 'Критических проблем не выявлено — город работает нормально ✓', sector: 'Система', level: 'low' });
+
+  document.getElementById('probCount').textContent = `${problems.length} ситуаций`;
+  document.getElementById('probList').innerHTML = problems.map((p, i) => `
+    <div class="prob-row" style="animation-delay:${i * 0.05}s">
+      <div class="pdot ${p.level}"></div>
+      <div class="pname">${p.name}</div>
+      <div class="psector">${p.sector}</div>
+      <span class="badge ${p.level}">${ll[p.level]}</span>
+    </div>
+  `).join('');
+}
+
+// ─── CHARTS ───────────────────────────────────────────
+function gc() {
+  const d = document.documentElement.getAttribute('data-theme') === 'dark';
+  return { grid: d ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.05)', tick: d ? '#5555aa' : '#9090aa' };
+}
+function updateChartTheme() {
+  if (!lineChart) return;
+  const c = gc();
+  lineChart.options.scales.x.ticks.color = c.tick;
+  lineChart.options.scales.y.ticks.color = c.tick;
+  lineChart.options.scales.x.grid.color = c.grid;
+  lineChart.options.scales.y.grid.color = c.grid;
+  lineChart.update();
+}
+
+function initCharts() {
+  const c = gc();
+  document.getElementById('lineLegend').innerHTML = [
+    ['Трафик %', '#7c6fff'], ['AQI', '#ef4444'], ['Инциденты×8', '#f59e0b'], ['ЖКХ×20', '#10b981'],
+  ].map(([l, col]) => `<span><span class="ld" style="background:${col}"></span>${l}</span>`).join('');
+
+  lineChart = new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: hist.labels,
+      datasets: [
+        { label: 'Трафик', data: hist.traffic, borderColor: '#7c6fff', backgroundColor: 'rgba(124,111,255,.08)', fill: true, borderWidth: 2, pointRadius: 3, tension: 0.4 },
+        { label: 'AQI', data: hist.aqi, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.4 },
+        { label: 'Инциденты', data: hist.inc, borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.4 },
+        { label: 'ЖКХ', data: hist.zhkh, borderColor: '#10b981', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 3, tension: 0.4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10, family: 'JetBrains Mono' }, color: c.tick, maxRotation: 0 }, grid: { display: false } },
+        y: { ticks: { font: { size: 10, family: 'JetBrains Mono' }, color: c.tick }, grid: { color: c.grid } }
+      },
+      animation: { duration: 500, easing: 'easeInOutQuart' }
+    }
+  });
+
+  pieChart = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Критично', 'Внимание', 'Норма'],
+      datasets: [{ data: [1, 1, 2], backgroundColor: ['#ef4444', '#f59e0b', '#10b981'], borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '70%',
+      plugins: { legend: { display: false } },
+      animation: { duration: 700, easing: 'easeInOutQuart' }
+    }
+  });
+}
+
+function updateCharts() {
+  if (!liveData || !lineChart) return;
+  lineChart.data.labels = [...hist.labels];
+  lineChart.data.datasets[0].data = [...hist.traffic];
+  lineChart.data.datasets[1].data = [...hist.aqi];
+  lineChart.data.datasets[2].data = [...hist.inc];
+  lineChart.data.datasets[3].data = [...hist.zhkh];
+  lineChart.update();
+
+  const levels = [liveData.traffic?.level, liveData.air?.level, liveData.safety?.level, liveData.zhkh?.level];
+  const high = levels.filter(l => l === 'high').length;
+  const medium = levels.filter(l => l === 'medium').length;
+  const low = levels.filter(l => l === 'low').length;
+  pieChart.data.datasets[0].data = [high || 0, medium || 0, low || 0];
+  pieChart.update();
+
+  document.getElementById('pieStats').innerHTML = `
+    <div class="pie-stat" style="border-color:rgba(239,68,68,.3)"><div class="ps-v" style="color:var(--high)">${high}</div><div class="ps-l">Критично</div></div>
+    <div class="pie-stat" style="border-color:rgba(245,158,11,.3)"><div class="ps-v" style="color:var(--mid)">${medium}</div><div class="ps-l">Внимание</div></div>
+    <div class="pie-stat" style="border-color:rgba(16,185,129,.3)"><div class="ps-v" style="color:var(--low)">${low}</div><div class="ps-l">Норма</div></div>
+  `;
+}
+
+// ─── MEMORY (localStorage) ────────────────────────────
+function loadMemory() {
+  try {
+    const raw = localStorage.getItem(MEM_KEY);
+    chatHistory = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(chatHistory)) chatHistory = [];
+  } catch { chatHistory = []; }
+  updateMemStatus();
+  renderChatHistory();
+}
+
+function saveMemory() {
+  if (chatHistory.length > MAX_MEM) chatHistory = chatHistory.slice(-MAX_MEM);
+  try { localStorage.setItem(MEM_KEY, JSON.stringify(chatHistory)); } catch {}
+  updateMemStatus();
+}
+
+function updateMemStatus() {
+  const el = document.getElementById('memStatus');
+  if (!el) return;
+  const cnt = chatHistory.length;
+  el.textContent = cnt > 0 ? `Память: ${cnt} сообщений сохранено` : 'Память: новый диалог';
+}
+
+function clearMemory() {
+  chatHistory = [];
+  localStorage.removeItem(MEM_KEY);
+  document.getElementById('chatMsgs').innerHTML = '';
+  addBotMsg('История очищена. Начинаем новый диалог! 🔄\n\nЯ Алем — AI-ассистент Акимата Алматы. Вижу актуальные данные города. Задай вопрос про транспорт, экологию, ЖКХ или пришли фото 🏙');
+  updateMemStatus();
+}
+
+function renderChatHistory() {
+  const msgs = document.getElementById('chatMsgs');
+  msgs.innerHTML = '';
+  if (chatHistory.length === 0) {
+    addBotMsg('Привет! Я Алем — AI-ассистент Акимата Алматы 🏙\n\nВижу актуальные данные города в реальном времени. Задай вопрос про транспорт, экологию, ЖКХ или пришли фото — разберём вместе!\n\n📝 Помню наши прошлые разговоры благодаря памяти.');
+    return;
+  }
+  chatHistory.forEach(m => {
+    if (m.role === 'user') addUserMsgEl(m.content);
+    else addBotMsgEl(m.content);
+  });
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ─── CHAT UI ──────────────────────────────────────────
+function toggleChat() {
+  const p = document.getElementById('chatPanel');
+  const isOpen = p.classList.contains('open');
+  if (isOpen) {
+    p.classList.remove('open');
+  } else {
+    p.classList.add('open');
+    loadMemory();
+    // Fix map when chat opens (layout shift)
+    setTimeout(() => { if (mapInst) mapInst.invalidateSize(); }, 50);
+  }
+}
+
+// Fix map on window resize
+window.addEventListener('resize', () => {
+  if (mapInst) {
+    clearTimeout(window._mapResizeTimer);
+    window._mapResizeTimer = setTimeout(() => mapInst.invalidateSize(), 200);
+  }
+});
+
+function addBotMsg(text) {
+  addBotMsgEl(text);
+  chatHistory.push({ role: 'assistant', content: text, time: Date.now() });
+  saveMemory();
+}
+
+function addUserMsgEl(text) {
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className = 'cmsg user';
+  div.innerHTML = `<div class="cav u">👤</div><div class="bubble">${escHtml(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addBotMsgEl(text) {
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.className = 'cmsg ai';
+  div.innerHTML = `<div class="cav">А</div><div class="bubble">${escHtml(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('chatMsgs');
+  const div = document.createElement('div');
+  div.id = 'typingMsg';
+  div.className = 'cmsg ai';
+  div.innerHTML = `<div class="cav">А</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function rmTyping() {
+  const t = document.getElementById('typingMsg');
+  if (t) t.remove();
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/\n/g,'<br>');
+}
+
+function sendQ(q) {
+  document.getElementById('chatInp').value = q;
+  sendChat();
+}
+
+// ─── AI RESPONSE ──────────────────────────────────────
+async function getAIAnswer(text, image) {
+  const res = await fetch('../backend/api/analyze.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question: text,
+      image: image || null,
+      context: liveData
+    })
+  });
+  if (!res.ok) throw new Error('API error ' + res.status);
+  const data = await res.json();
+  if (!data.answer) throw new Error('Нет ответа от сервера');
+  return data.answer;
+}
+
+function buildFallbackAnswer(q) {
+  const d = liveData;
+  if (!d) return 'Данные города ещё загружаются. Попробуй через несколько секунд! 🔄';
+  
+  const lq = q.toLowerCase();
+  
+  if (lq.includes('воздух') || lq.includes('aqi') || lq.includes('экология') || lq.includes('pm')) {
+    const lvl = { high: '⚠️ ПЛОХОЕ', medium: '⚡ УМЕРЕННОЕ', low: '✅ ХОРОШЕЕ' };
+    return `🌫 Качество воздуха в Алматы сейчас\n\nAQI: ${d.air.aqi} — ${lvl[d.air.level] || 'норма'}\nPM2.5: ${d.air.pm25} мкг/м³\nPM10: ${d.air.pm10} мкг/м³\nNO2: ${d.air.no2} мкг/м³\n\n${d.air.level === 'high' ? '🔴 Рекомендую ограничить прогулки, использовать маску. Особенно берегите детей и пожилых.' : d.air.level === 'medium' ? '🟡 Воздух умеренного качества. Чувствительным людям рекомендую сократить физические нагрузки на улице.' : '🟢 Воздух чистый — можно спокойно гулять и заниматься спортом!'}\n\nДанные: Open-Meteo API в реальном времени`;
+  }
+  
+  if (lq.includes('погода') || lq.includes('температур') || lq.includes('дождь') || lq.includes('снег')) {
+    const w = d.weather;
+    return `🌤 Погода в Алматы сейчас\n\n${w.icon} ${w.temp}°C (ощущается как ${w.feels_like}°C)\n${w.desc}\n\n💧 Влажность: ${w.humidity}%\n💨 Ветер: ${w.wind_speed} м/с\n👁 Видимость: ${w.visibility} км\n\nДанные: Open-Meteo API в реальном времени`;
+  }
+  
+  if (lq.includes('пробк') || lq.includes('трафик') || lq.includes('дорог') || lq.includes('транспорт') || lq.includes('маршрут')) {
+    const t = d.traffic;
+    const lvl = { high: '🔴 ВЫСОКАЯ — серьёзные пробки', medium: '🟡 УМЕРЕННАЯ — замедление', low: '🟢 НИЗКАЯ — движение свободно' };
+    return `🚗 Транспортная ситуация в Алматы\n\nЗагруженность: ${t.load}% — ${lvl[t.level]}\n${t.peak ? '⏰ Сейчас ЧАС ПИК' : '✓ Вне часа пик'}\nСреднее время в пути: ~${t.avg_time} мин\n\n${t.level === 'high' ? '💡 Рекомендую: используй метро (линия 1 Алатау↔Достык), автобусы BRT. Объезжай пр. Аль-Фараби и пр. Абая.' : '💡 Движение нормальное. Основные маршруты: метро, автобусы 1, 28, 45, 86.'}\n\nРасчёт по модели времени Алматы (UTC+5)`;
+  }
+  
+  if (lq.includes('жкх') || lq.includes('вода') || lq.includes('авар') || lq.includes('жалоб') || lq.includes('отключ')) {
+    const z = d.zhkh;
+    return `🔧 Статус ЖКХ Алматы\n\nАварий сейчас: ${z.accidents}\nОтключения воды: ${z.water_off} случаев\nЖалоб граждан: ${z.complaints}\nВыполнение заявок: ${z.execution}%\n\n${z.level === 'high' ? '⚠️ Повышенная нагрузка на службы ЖКХ!\nКуда обращаться:\n📞 АЛСЕКО: 314-83-83\n📞 АлматыЭнергоСбыт: 274-00-00\n📞 Горячая линия: 109' : '✅ Ситуация с ЖКХ в норме.\nПри проблемах: звони 109 (единая горячая линия) или через egov.kz'}`;
+  }
+  
+  if (lq.includes('безопасн') || lq.includes('инцидент') || lq.includes('полиц') || lq.includes('дтп')) {
+    const s = d.safety;
+    return `🛡 Безопасность в Алматы\n\nИнциденты за сутки: ${s.incidents}\nДТП: ${s.dtp}\nВремя реагирования: ${s.response} мин\n\n${s.level === 'high' ? '⚠️ Повышенная активность инцидентов!\nБудьте осторожны, избегайте малолюдных мест поздно вечером.' : '✅ Обстановка спокойная.\nПри ЧС звони: 102 (полиция), 103 (скорая), 101 (пожарные)'}\n\nДля жалоб: elicense.kz или приложение «e-Sapar»`;
+  }
+  
+  if (lq.includes('сводк') || lq.includes('весь') || lq.includes('всё') || lq.includes('расскаж') || lq.includes('обзор')) {
+    const w = d.weather, a = d.air, t = d.traffic, z = d.zhkh, s = d.safety;
+    const emoji = { high: '🔴', medium: '🟡', low: '🟢' };
+    return `📊 Полная сводка по Алматы (${d.updated_at})\n\n${w.icon} Погода: ${w.temp}°C, ${w.desc}\n${emoji[a.level]} Воздух: AQI ${a.aqi} — ${a.level === 'high' ? 'плохой' : a.level === 'medium' ? 'умеренный' : 'хороший'}\n${emoji[t.level]} Транспорт: ${t.load}% ${t.peak ? '(час пик)' : ''}\n${emoji[z.level]} ЖКХ: аварий ${z.accidents}, жалоб ${z.complaints}\n${emoji[s.level]} Безопасность: инцидентов ${s.incidents}, ДТП ${s.dtp}\n\n${[a.level, t.level, z.level, s.level].filter(l => l === 'high').length > 1 ? '⚠️ Несколько показателей требуют внимания!' : '✅ Город работает в штатном режиме.'}\n\nДанные обновляются каждые 5 минут 🔄`;
+  }
+  
+  if (lq.includes('фото') || lq.includes('снимок') || lq.includes('изображени')) {
+    return '📷 Отправь фото через кнопку 📎 — я проанализирую ситуацию и дам рекомендацию!\n\nМогу определить:\n• Дорожные проблемы (ямы, разметка, пробки)\n• Экологические нарушения\n• Состояние инфраструктуры\n• Нарушения ПДД\n• Проблемы ЖКХ';
+  }
+  
+  return `Привет! Я Алем, ассистент Акимата Алматы 🏙\n\nМогу помочь с:\n• 🌫 Качество воздуха и погода\n• 🚗 Транспорт и пробки\n• 🔧 ЖКХ и аварии\n• 🛡 Безопасность\n• 📊 Полная сводка по городу\n• 📷 Анализ фото\n\nСпроси что-нибудь конкретное!`;
+}
+
+async function sendChat() {
+  if (isAISending) return;
+  const inp = document.getElementById('chatInp');
+  const text = inp.value.trim();
+  if (!text && !currentImage) return;
+
+  inp.value = '';
+  const userText = text || '📷 Пожалуйста, проанализируй это фото из Алматы';
+  addUserMsgEl(userText);
+  chatHistory.push({ role: 'user', content: userText, time: Date.now() });
+  saveMemory();
+
+  const imgToSend = currentImage;
+  currentImage = null;
+  document.getElementById('imgPrev').style.display = 'none';
+
+  isAISending = true;
+  addTyping();
+
+  try {
+    const answer = await getAIAnswer(userText, imgToSend);
+    rmTyping();
+    addBotMsg(answer);
+  } catch (e) {
+    console.error('AI ERROR:', e);
+    rmTyping();
+    const fb = buildFallbackAnswer(userText);
+    addBotMsg(fb);
+  }
+
+  isAISending = false;
+}
+
+// ─── IMAGE ───────────────────────────────────────────
+function onImg(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentImage = ev.target.result.split(',')[1];
+    document.getElementById('imgPrev').style.display = 'flex';
+    document.getElementById('prevImg').src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function rmImg() {
+  currentImage = null;
+  document.getElementById('imgPrev').style.display = 'none';
+  document.getElementById('fileIn').value = '';
+}
+document.addEventListener('paste', e => {
+  for (const item of (e.clipboardData?.items || [])) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      const reader = new FileReader();
+      reader.onload = ev => {
+        currentImage = ev.target.result.split(',')[1];
+        document.getElementById('imgPrev').style.display = 'flex';
+        document.getElementById('prevImg').src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+      break;
+    }
+  }
+});
+
+// ─── MISC ─────────────────────────────────────────────
+function exportData() {
+  if (!liveData) { showToast('Данные ещё загружаются...'); return; }
+  const blob = new Blob([JSON.stringify(liveData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `smartcity-almaty-${liveData.updated_at?.replace(':','')}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function toggleFS() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+}
+
+let toastTimer;
+function showToast(msg) {
+  clearTimeout(toastTimer);
+  const old = document.getElementById('toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.id = 'toast'; t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  toastTimer = setTimeout(() => { t.remove(); }, 3000);
+}
+
+// Live clock
+function updateClock() {
+  const d = new Date();
+  const h = String((d.getUTCHours() + 5) % 24).padStart(2,'0');
+  const m = String(d.getUTCMinutes()).padStart(2,'0');
+  const s = String(d.getUTCSeconds()).padStart(2,'0');
+  const el = document.getElementById('uptime');
+  if (el) el.textContent = `Алматы ${h}:${m}:${s}`;
+}
+
+// ─── INIT ─────────────────────────────────────────────
+function init() {
+  initCharts();
+  // Init map after DOM is fully painted
+  requestAnimationFrame(() => {
+    initMap();
+    loadData();
+  });
+  setInterval(loadData, 5 * 60 * 1000);
+  setInterval(updateClock, 1000);
+  // Extra invalidateSize calls to guarantee correct render
+  [500, 1200, 2500].forEach(ms => setTimeout(() => { if (mapInst) mapInst.invalidateSize(); }, ms));
+}
+
+window.addEventListener('load', init);
+</script>
 </body>
 </html>
