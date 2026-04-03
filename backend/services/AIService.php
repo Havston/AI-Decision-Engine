@@ -29,7 +29,11 @@ class AIService {
                 ["role" => "system", "content" => $systemPrompt],
                 $userMessage
             ],
+<<<<<<< HEAD
             "max_tokens" => 120
+=======
+            "max_tokens" => 1000
+>>>>>>> 4fac8e7b1f0f920f4dd064ae0ec18a6a4b2a8f99
         ];
         
         $ch = curl_init("https://api.openai.com/v1/chat/completions");

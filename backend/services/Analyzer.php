@@ -23,6 +23,7 @@ class Analyzer {
             $problem = "Ситуация стабильна";
         }
         
+<<<<<<< HEAD
         $aiPrompt = "
             Ты система управления городом Алматы.
 
@@ -43,6 +44,9 @@ class Analyzer {
         Ответ:
         ";
 
+=======
+        $aiPrompt = "Данные города Алматы: трафик {$traffic}%, загрязнение воздуха {$pollution}%. Проблема: {$problem}. Дай конкретную рекомендацию акимату в 2-3 предложения.";
+>>>>>>> 4fac8e7b1f0f920f4dd064ae0ec18a6a4b2a8f99
         $recommendation = $this->ai->generate($aiPrompt);
         
         return [
