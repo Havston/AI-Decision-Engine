@@ -12,7 +12,6 @@ class Analyzer {
         $traffic = $data['traffic'] ?? 50;
         $pollution = $data['pollution'] ?? 50;
         
-        // Быстрый анализ без AI
         if ($traffic > 70) {
             $level = "high";
             $problem = "Высокая загруженность дорог";
@@ -24,8 +23,7 @@ class Analyzer {
             $problem = "Ситуация стабильна";
         }
         
-        // AI рекомендация
-        $aiPrompt = "Данные города Алматы: трафик {$traffic}%, загрязнение {$pollution}%. Дай короткую рекомендацию акимату.";
+        $aiPrompt = "Данные города Алматы: трафик {$traffic}%, загрязнение воздуха {$pollution}%. Проблема: {$problem}. Дай конкретную рекомендацию акимату в 2-3 предложения.";
         $recommendation = $this->ai->generate($aiPrompt);
         
         return [
@@ -36,7 +34,7 @@ class Analyzer {
         ];
     }
     
-    public function chat($question, $imageBase64 = null, $history = []) {
+    public function chat($question, $imageBase64 = null) {
         return $this->ai->generate($question, $imageBase64);
     }
 }
