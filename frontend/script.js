@@ -1,6 +1,5 @@
 const API_URL  = "/AI-Decision-Engine-main/backend/api/analyze.php";
 const DATA_URL = "/AI-Decision-Engine-main/backend/api/data.php";
-
 // Глобальное состояние
 let liveData = null;
 let currentSection = 'all';
