@@ -1,33 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Smart City Dashboard</title>
-</head>
-<body>
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
 
-<h1>AI City Dashboard</h1>
-
-<button onclick="analyze()">Анализировать</button>
-
-<pre id="result"></pre>
-
-<script>
-async function analyze() {
-    const res = await fetch("http://localhost:8000/analyze", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            traffic: 80,
-            pollution: 50
-        })
-    });
-
-    const data = await res.json();
-    document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
 }
-</script>
 
-</body>
-</html>
+require_once __DIR__ . '/backend/services/AIService.php';
+require_once __DIR__ . '/backend/services/Analyzer.php';
+
+$analyzer = new Analyzer();
+$uri = $_SERVER['REQUEST_URI'];
+$body = json_decode(file_get_contents('php://input'), true);
+
+// Роутинг
+if (strpos($uri, '/analyze') !== false) {
+    echo json_encode($analyzer->analyze($body));
+
+} elseif (strpos($uri, '/ask') !== false) {
+    $question = $body['question'] ?? '';
+    $image = $body['image'] ?? null;
+    $answer = $analyzer->chat($question, $image);
+    echo json_encode(["answer" => $answer]);
+
+} else {
+    echo json_encode(["status" => "AI Decision Engine работает"]);
+}
