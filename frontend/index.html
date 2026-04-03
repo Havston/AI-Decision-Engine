@@ -10,14 +10,49 @@
 
     <h1>🏙 Smart City Dashboard</h1>
 
-    <div class="chart">
-        <p>📈 Загруженность дорог: 80%</p>
+    <!-- Вкладки -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('transport')">🚗 Транспорт</button>
+        <button class="tab" onclick="switchTab('eco')">🌫 Экология</button>
     </div>
 
-    <div class="cards">
-        <div class="card">
-            <h2>🚗 Транспорт</h2>
-            <p>Загруженность дорог</p>
+    <!-- ===== ТРАНСПОРТ ===== -->
+    <div id="transport" class="tab-content active">
+
+        <div class="chart">
+            <p>📈 Загруженность дорог: 80%</p>
+        </div>
+
+        <select id="district">
+            <option>Центр</option>
+            <option>Алмалинский</option>
+            <option>Ауэзовский</option>
+            <option>Бостандыкский</option>
+        </select>
+
+        <div class="btn-container">
+            <button class="analyze-btn" onclick="analyze()">Анализировать</button>
+        </div>
+
+        <div id="result" class="result hidden">
+            <h3>📊 Результат анализа</h3>
+            <p id="problem"></p>
+            <p id="level"></p>
+            <p id="recommendation"></p>
+            <p id="summary"></p>
+        </div>
+
+    </div>
+
+    <!-- ===== ЭКОЛОГИЯ ===== -->
+    <div id="eco" class="tab-content">
+
+        <div class="map-container">
+            <img src="map.png" class="map">
+
+            <div id="zone-center" class="zone">Центр</div>
+            <div id="zone-auezov" class="zone">Ауэз</div>
+            <div id="zone-bost" class="zone">Бостан</div>
         </div>
 
         <div class="card">
@@ -25,28 +60,25 @@
             <p id="eco-level">Уровень: —</p>
             <div id="eco-indicator" class="indicator"></div>
         </div>
-    </div>
-    <select id="district">
-        <option>Центр</option>
-        <option>Алмалинский</option>
-        <option>Ауэзовский</option>
-        <option>Бостандыкский</option>
-    </select>
 
-    <div class="btn-container">
-        <button class="analyze-btn" onclick="analyze()">Анализировать</button>
-    </div>
-
-    <div id="result" class="result hidden">
-        <h3>📊 Результат анализа</h3>
-        <p id="problem"></p>
-        <p id="level"></p>
-        <p id="recommendation"></p>
-        <p id="summary"></p>
     </div>
 
 </div>
 
 <script src="script.js"></script>
+
+<div class="chat-button" onclick="toggleChat()">💬</div>
+
+<div id="chat" class="chat hidden">
+    <div class="chat-header">AI Ассистент</div>
+
+    <div id="chat-messages" class="chat-messages"></div>
+
+    <div class="chat-input">
+        <input id="chat-input" placeholder="Задай вопрос..." />
+        <button onclick="sendMessage()">➤</button>
+    </div>
+</div>
+
 </body>
 </html>
