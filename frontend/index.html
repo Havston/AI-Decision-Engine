@@ -22,9 +22,16 @@
 
         <div class="card">
             <h2>🌫 Экология</h2>
-            <p>Качество воздуха</p>
+            <p id="eco-level">Уровень: —</p>
+            <div id="eco-indicator" class="indicator"></div>
         </div>
     </div>
+    <select id="district">
+        <option>Центр</option>
+        <option>Алмалинский</option>
+        <option>Ауэзовский</option>
+        <option>Бостандыкский</option>
+    </select>
 
     <div class="btn-container">
         <button class="analyze-btn" onclick="analyze()">Анализировать</button>
