@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart City Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>🏙 Smart City Dashboard</h1>
+
+    <div class="chart">
+        <p>📈 Загруженность дорог: 80%</p>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <h2>🚗 Транспорт</h2>
+            <p>Загруженность дорог</p>
+        </div>
+
+        <div class="card">
+            <h2>🌫 Экология</h2>
+            <p>Качество воздуха</p>
+        </div>
+    </div>
+
+    <div class="btn-container">
+        <button class="analyze-btn" onclick="analyze()">Анализировать</button>
+    </div>
+
+    <div id="result" class="result hidden">
+        <h3>📊 Результат анализа</h3>
+        <p id="problem"></p>
+        <p id="level"></p>
+        <p id="recommendation"></p>
+        <p id="summary"></p>
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
