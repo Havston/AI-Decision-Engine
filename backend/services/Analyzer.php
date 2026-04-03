@@ -3,60 +3,47 @@ require_once __DIR__ . '/AIService.php';
 
 class Analyzer {
     private $ai;
-    
+
     public function __construct() {
         $this->ai = new AIService();
     }
-    
+
     public function analyze($data) {
-        $traffic = $data['traffic'] ?? 50;
-        $pollution = $data['pollution'] ?? 50;
-        
+        $traffic = (int)($data['traffic'] ?? 50);
+        $pollution = (int)($data['pollution'] ?? 50);
+
+        $traffic = max(0, min(100, $traffic));
+        $pollution = max(0, min(100, $pollution));
+
         if ($traffic > 70) {
-            $level = "high";
-            $problem = "Высокая загруженность дорог";
+            $level = 'high';
+            $problem = 'Высокая загруженность дорог';
         } elseif ($pollution > 60) {
-            $level = "medium";
-            $problem = "Высокое загрязнение воздуха";
+            $level = 'medium';
+            $problem = 'Высокое загрязнение воздуха';
         } else {
-            $level = "low";
-            $problem = "Ситуация стабильна";
+            $level = 'low';
+            $problem = 'Ситуация стабильна';
         }
-        
-<<<<<<< HEAD
-        $aiPrompt = "
-            Ты система управления городом Алматы.
 
-        Данные:
-        - трафик: {$traffic}%
-        - загрязнение: {$pollution}%
+        $aiPrompt = "Ты система управления городом Алматы.\n\n"
+            . "Данные:\n"
+            . "- трафик: {$traffic}%\n"
+            . "- загрязнение: {$pollution}%\n\n"
+            . "Проблема: {$problem}\n\n"
+            . "Задача: дай конкретную рекомендацию для акимата.\n"
+            . "Требования: максимум 2 предложения, без воды, только действия.";
 
-        Проблема: {$problem}
-
-        Задача:
-        Дай КОНКРЕТНУЮ рекомендацию для акимата.
-
-        Требования:
-        - максимум 2 предложения
-        - без воды
-        - только действия
-
-        Ответ:
-        ";
-
-=======
-        $aiPrompt = "Данные города Алматы: трафик {$traffic}%, загрязнение воздуха {$pollution}%. Проблема: {$problem}. Дай конкретную рекомендацию акимату в 2-3 предложения.";
->>>>>>> 4fac8e7b1f0f920f4dd064ae0ec18a6a4b2a8f99
         $recommendation = $this->ai->generate($aiPrompt);
-        
+
         return [
-            "problem" => $problem,
-            "level" => $level,
-            "recommendation" => $recommendation,
-            "data" => ["traffic" => $traffic, "pollution" => $pollution]
+            'problem' => $problem,
+            'level' => $level,
+            'recommendation' => $recommendation,
+            'data' => ['traffic' => $traffic, 'pollution' => $pollution]
         ];
     }
-    
+
     public function chat($question, $imageBase64 = null) {
         return $this->ai->generate($question, $imageBase64);
     }
